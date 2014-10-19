@@ -2,6 +2,10 @@
 #include <vector>
 #include <string>
 #include <cstring>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <stdio.h>
 
 using namespace std;
 
@@ -57,13 +61,16 @@ char ** get_command(string& a, int flag)
     //take the first token
     char * token = strtok(copy, " ;|&");
 
+    //for position of delimiter
+    unsigned int pos;
+
     while (token != 0)
     {
 //        cout << token << endl;
 
         //the position of the delimiter with respect
         //to the beginning of the array
-        unsigned int pos = token - begin + strlen(token);
+        pos = token - begin + strlen(token);
 
         //put the token at the end of the vector
         temp.push_back(token);
@@ -109,6 +116,8 @@ char ** get_command(string& a, int flag)
                     flag = 0;
                 }
 
+                a = a.substr(pos + 1, a.size() - pos + 1);
+
                 return vec;
             }
 
@@ -117,6 +126,8 @@ char ** get_command(string& a, int flag)
         token = strtok(NULL, " ;|&");
     }
 
+    a = "";
+
     vec = conv_vec(temp);
 
     delete copy;
@@ -124,8 +135,6 @@ char ** get_command(string& a, int flag)
     flag = 0;
 
     return vec;
-
-    return 0;
 }
 
 void display_prompt()
@@ -136,15 +145,49 @@ void display_prompt()
 int main()
 {
     int flag = 0;
-    //put loop here
-    display_prompt();
-    string command;
-    getline(cin, command);
-    char ** argv = get_command(command, flag);
-
-    for (int i = 0; argv[i] != 0; ++i)
+    while (1)
     {
-        cout << argv[i] << endl;
+
+        display_prompt();
+        string command;
+        getline(cin, command);
+        char ** argv = get_command(command, flag);
+
+        cout << command << endl;
+
+        if (strcmp(argv[0], "exit") == 0)
+        {
+            return 0;
+        }
+
+        for (int i = 0; argv[i] != 0; ++i)
+        {
+            cout << argv[i] << endl;
+        }
+
+        int fork_flag = fork();
+        if (fork_flag == -1)
+        {
+            perror("fork");
+
+            return 1;
+        }
+        else if (fork_flag == 0)
+        {
+            int execvp_flag = execvp(argv[0], argv);
+            if (execvp_flag == -1)
+            {
+                perror("execvp");
+                return 1;
+            }
+        }
+
+        int wait_flag = wait(NULL);
+        if (wait_flag == -1)
+        {
+            perror("wait");
+            return 1;
+        }
     }
 
     return 0;
