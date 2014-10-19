@@ -197,7 +197,7 @@ int main()
                 if (execvp_flag == -1)
                 {
                     perror("execvp");
-//                    return 1;
+                    return 1;
                 }
             }
 
