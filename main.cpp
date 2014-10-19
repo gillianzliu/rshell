@@ -35,7 +35,7 @@ char ** conv_vec(vector<char*> v)
     return t;
 }
 
-char ** get_command(string& a, int flag)
+char ** get_command(string& a, int& flag)
 {
     //first make a copy of the command string
     //so that we can check what delimiter strtok
@@ -83,7 +83,8 @@ char ** get_command(string& a, int flag)
             char delim = a.at(pos);
 //            cout << delim << endl;
 
-            if (delim != ' ')
+            if (delim != ' ' || (pos + 1 < a.size() && (a.at(pos + 1) == '&' ||
+                a.at(pos + 1) == '|')))
             {
                 //if it was not ' ' then we have reached a
                 //delimiter that indicates the end of the
@@ -100,12 +101,13 @@ char ** get_command(string& a, int flag)
                 //remember to get rid of the dynamically allocated
                 delete copy;
 
-                if (delim == '|')
+                if (delim == '|' || (pos + 1 < a.size() && a.at(pos + 1) == '|'))
                 {
                     //set flag bit
                     flag = 1;
                 }
-                else if (delim == '&')
+                else if (delim == '&' || (pos + 1 < a.size() && a.at(pos + 1)
+                    == '&'))
                 {
                     //set flag bit to 2
                     flag = 2;
@@ -116,6 +118,7 @@ char ** get_command(string& a, int flag)
                     flag = 0;
                 }
 
+                cout << flag << endl;
                 a = a.substr(pos + 1, a.size() - pos + 1);
 
                 return vec;
@@ -139,7 +142,20 @@ char ** get_command(string& a, int flag)
 
 void display_prompt()
 {
-    cout << "$ ";
+    char host[15];
+
+    int host_flag = gethostname(host, sizeof host);
+    if(host_flag == -1)
+    {
+        perror("gethostname");
+    }
+    char *login = getlogin();
+    if (login == 0)
+    {
+        perror("getlogin");
+    }
+
+    cout << login << '@' << host << "$ ";
 }
 
 int main()
@@ -151,42 +167,54 @@ int main()
         display_prompt();
         string command;
         getline(cin, command);
-        char ** argv = get_command(command, flag);
-
-        cout << command << endl;
-
-        if (strcmp(argv[0], "exit") == 0)
+        while(flag != 0 || command != "")
         {
-            return 0;
-        }
+            char ** argv = get_command(command, flag);
 
-        for (int i = 0; argv[i] != 0; ++i)
-        {
-            cout << argv[i] << endl;
-        }
+            cout << command << endl;
+            cout << flag << endl;
 
-        int fork_flag = fork();
-        if (fork_flag == -1)
-        {
-            perror("fork");
-
-            return 1;
-        }
-        else if (fork_flag == 0)
-        {
-            int execvp_flag = execvp(argv[0], argv);
-            if (execvp_flag == -1)
+            if (strcmp(argv[0], "exit") == 0)
             {
-                perror("execvp");
+                return 0;
+            }
+
+            for (int i = 0; argv[i] != 0; ++i)
+            {
+                cout << argv[i] << endl;
+            }
+
+            int fork_flag = fork();
+            if (fork_flag == -1)
+            {
+                perror("fork");
+
                 return 1;
             }
-        }
+            else if (fork_flag == 0)
+            {
+                int execvp_flag = execvp(argv[0], argv);
+                if (execvp_flag == -1)
+                {
+                    perror("execvp");
+//                    return 1;
+                }
+            }
 
-        int wait_flag = wait(NULL);
-        if (wait_flag == -1)
-        {
-            perror("wait");
-            return 1;
+            int wait_flag = wait(NULL);
+            if (wait_flag == -1)
+            {
+                perror("wait");
+                if (flag == 2)
+                {
+                    break;
+                }
+//                return 1;
+            }
+            if (flag == 1)
+            {
+                break;
+            }
         }
     }
 
