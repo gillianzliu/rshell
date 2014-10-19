@@ -197,6 +197,7 @@ int main()
                 if (execvp_flag == -1)
                 {
                     perror("execvp");
+                    cout << "error" << endl;
                     return 1;
                 }
             }
