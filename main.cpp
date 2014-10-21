@@ -1,4 +1,5 @@
 #include <iostream>
+#include <pwd.h>
 #include <vector>
 #include <string>
 #include <cstring>
@@ -59,7 +60,7 @@ char ** get_command(string& a, int& flag)
     char * begin = copy;
 
     //take the first token
-    char * token = strtok(copy, " ;|&");
+    char * token = strtok(copy, " ;|&#");
 
     //for position of delimiter
     unsigned int pos;
@@ -83,58 +84,78 @@ char ** get_command(string& a, int& flag)
             char delim = a.at(pos);
 //            cout << delim << endl;
 
-            if (delim != ' ' || (pos + 1 < a.size() && (a.at(pos + 1) == '&' ||
-                a.at(pos + 1) == '|')))
+            if (delim == ' ')
             {
-                //if it was not ' ' then we have reached a
-                //delimiter that indicates the end of the
-                //command so we are done. Convert
-                //the vector into the proper char * []
+                while (pos < a.size() && delim == ' ')
+                {
+                    ++pos;
+                    delim = a.at(pos);
+                }
+            }
+
+            //Now we know delim is either a delimiter
+            //that signifies the end of a command
+            //or is the first char of the next one
+            //so we check
+            if (delim == '|' || delim == '&' || delim == ';'
+                || delim == '#')
+            {
+                //so we are done with this command
+                //now we convert it to a char**
                 vec = conv_vec(temp);
 
-//                for (unsigned i = 0; vec[i] != 0; ++i)
-//                {
-//                    cout << i << endl;
-//                    cout << vec[i] <<  endl;
-//                }
+//            for (unsigned i = 0; vec[i] != 0; ++i)
+//            {
+//                cout << i << endl;
+//                cout << vec[i] <<  endl;
+//            }
 
                 //remember to get rid of the dynamically allocated
                 delete copy;
 
-                if (delim == '|' || (pos + 1 < a.size() && a.at(pos + 1) == '|'))
+                //reset flag ('#' and ';' use 0 so reset it for
+                //those and change for '|' and '&'
+                flag = 0;
+
+                if (delim == '|')
                 {
                     //set flag bit
                     flag = 1;
                 }
-                else if (delim == '&' || (pos + 1 < a.size() && a.at(pos + 1)
-                    == '&'))
+                else if (delim == '&')
                 {
                     //set flag bit to 2
                     flag = 2;
                 }
-                else
+                else if(delim == '#')
                 {
-                    //then it was ; so set flag bit to 0
-                    flag = 0;
+                    pos = 0;
+                    a = "";
                 }
 
-                cout << flag << endl;
-                a = a.substr(pos + 1, a.size() - pos + 1);
+//            cout << flag << endl;
+            a = a.substr(pos + 1, a.size() - pos + 1);
 
-                return vec;
+            return vec;
             }
 
+            //this means that delim == a character
+            //for the next argument so continue
         }
 
         token = strtok(NULL, " ;|&");
     }
 
+    //so we have reached the end, set a to empty
     a = "";
 
+    //convert to proper char**
     vec = conv_vec(temp);
 
+    //get rid of dynamically allocated
     delete copy;
 
+    //we got to the end so the flag should be 0
     flag = 0;
 
     return vec;
@@ -149,18 +170,20 @@ void display_prompt()
     {
         perror("gethostname");
     }
-    char *login = getlogin();
+    char *login = (getpwuid(getuid()))->pw_name;
     if (login == 0)
     {
         perror("getlogin");
     }
 
+//    printf("%s", login);
     cout << login << '@' << host << "$ ";
 }
 
 int main()
 {
     int flag = 0;
+    int error_flag;
     while (1)
     {
 
@@ -171,18 +194,20 @@ int main()
         {
             char ** argv = get_command(command, flag);
 
-            cout << command << endl;
-            cout << flag << endl;
+//            cout << command << endl;
+//            cout << flag << endl;
 
             if (strcmp(argv[0], "exit") == 0)
             {
                 return 0;
             }
 
-            for (int i = 0; argv[i] != 0; ++i)
-            {
-                cout << argv[i] << endl;
-            }
+//            for (int i = 0; argv[i] != 0; ++i)
+//            {
+//                cout << argv[i] << endl;
+//            }
+
+            error_flag = 0;
 
             int fork_flag = fork();
             if (fork_flag == -1)
@@ -197,22 +222,25 @@ int main()
                 if (execvp_flag == -1)
                 {
                     perror("execvp");
-                    cout << "error" << endl;
                     return 1;
                 }
             }
 
-            int wait_flag = wait(NULL);
+            int wait_flag = wait(&error_flag);
             if (wait_flag == -1)
             {
                 perror("wait");
+                return 1;
+            }
+//            cout << "Error flag is " << error_flag << endl;
+            if (error_flag != 0)
+            {
                 if (flag == 2)
                 {
                     break;
                 }
-//                return 1;
             }
-            if (flag == 1)
+            else if (flag == 1)
             {
                 break;
             }
