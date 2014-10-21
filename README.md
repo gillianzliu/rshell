@@ -1,5 +1,14 @@
 rshell
 ======
 
-cs100 hw0 assignment
+#Author & Contributor List
 
+#Program Overview
+
+#Files
+
+#How to run
+
+#Program Operation
+
+#Bugs
