@@ -38,6 +38,8 @@ char ** conv_vec(vector<char*> v)
 
 char ** get_command(string& a, int& flag)
 {
+    //cout << a << endl;
+
     //first make a copy of the command string
     //so that we can check what delimiter strtok
     //stopped at
@@ -76,6 +78,8 @@ char ** get_command(string& a, int& flag)
         //put the token at the end of the vector
         temp.push_back(token);
 
+        //cout << pos << endl;
+
         //to find out which delimiter was found
         //if it was the end, it will not go through this
         if (pos < a.size())
@@ -86,7 +90,7 @@ char ** get_command(string& a, int& flag)
 
             if (delim == ' ')
             {
-                while (pos < a.size() && delim == ' ')
+                while (pos < a.size() - 1 && delim == ' ')
                 {
                     ++pos;
                     delim = a.at(pos);
@@ -176,7 +180,6 @@ void display_prompt()
         perror("getlogin");
     }
 
-//    printf("%s", login);
     cout << login << '@' << host << "$ ";
 }
 
@@ -190,6 +193,16 @@ int main()
         display_prompt();
         string command;
         getline(cin, command);
+
+        //first try to find a '#' sign to indicate
+        //a comment
+        int p = command.find('#');
+
+        if (p != -1)
+        {
+            command = command.substr(0, p);
+        }
+
         while(flag != 0 || command != "")
         {
             char ** argv = get_command(command, flag);
@@ -197,7 +210,12 @@ int main()
 //            cout << command << endl;
 //            cout << flag << endl;
 
-            if (strcmp(argv[0], "exit") == 0)
+            if (argv[0] == NULL)
+            {
+                break;
+            }
+
+            else if (strcmp(argv[0], "exit") == 0)
             {
                 return 0;
             }
