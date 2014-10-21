@@ -1,4 +1,5 @@
 #include <iostream>
+#include <stdlib.h>
 #include <pwd.h>
 #include <vector>
 #include <string>
@@ -167,7 +168,7 @@ char ** get_command(string& a, int& flag)
 
 void display_prompt()
 {
-    char host[15];
+    char host[50];
 
     int host_flag = gethostname(host, sizeof host);
     if(host_flag == -1)
@@ -232,7 +233,7 @@ int main()
             {
                 perror("fork");
 
-                return 1;
+                exit(1);
             }
             else if (fork_flag == 0)
             {
@@ -240,7 +241,7 @@ int main()
                 if (execvp_flag == -1)
                 {
                     perror("execvp");
-                    return 1;
+                    exit(1);
                 }
             }
 
@@ -248,7 +249,7 @@ int main()
             if (wait_flag == -1)
             {
                 perror("wait");
-                return 1;
+                exit(1);
             }
 //            cout << "Error flag is " << error_flag << endl;
             if (error_flag != 0)
