@@ -40,8 +40,8 @@ exec.script
 ##How to run
 
 1. Clone this directory to your local machine.
-2. `cd` into the rshell directory.
-3. call make
+2. `cd` into the Rshell directory.
+3. Call `make`
 4. `cd` into bin
 5. Call Rshell
 
