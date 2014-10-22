@@ -113,7 +113,8 @@ char ** get_command(string& a, int& flag)
 
                 //if it is not 2, give an error message and clear
                 //the vector so that no commands are executed
-                if (n != 2)
+                if (n != 2 || pos + n == a.size() || a.at(pos + n) == ';'
+                    || a.at(pos + n) == '|' || a.at(pos + n) == '&')
                 {
                     cerr << "Rshell: Syntax error near '" << delim
                     << "'" << endl;
