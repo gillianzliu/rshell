@@ -98,12 +98,35 @@ char ** get_command(string& a, int& flag)
                 }
             }
 
+            //checking to see if there are two of the '|'
+            //or '&'
+            if (delim == '|' || delim == '&')
+            {
+                //increment this n as long as it is not the
+                //end and they are equal
+                int n = 1;
+                while (pos + n < a.size() && delim
+                     == a.at(pos + n))
+                {
+                    ++n;
+                }
+
+                //if it is not 2, give an error message and clear
+                //the vector so that no commands are executed
+                if (n != 2)
+                {
+                    cerr << "Rshell: Syntax error near '" << delim
+                    << "'" << endl;
+
+                    temp.clear();
+                }
+            }
+
             //Now we know delim is either a delimiter
             //that signifies the end of a command
-            //or is the first char of the next one
+            //or is the first char of an argument
             //so we check
-            if (delim == '|' || delim == '&' || delim == ';'
-                || delim == '#')
+            if (delim == '|' || delim == '&' || delim == ';')
             {
                 //so we are done with this command
                 //now we convert it to a char**
@@ -131,11 +154,6 @@ char ** get_command(string& a, int& flag)
                 {
                     //set flag bit to 2
                     flag = 2;
-                }
-                else if(delim == '#')
-                {
-                    pos = 0;
-                    a = "";
                 }
 
 //            cout << flag << endl;
@@ -168,13 +186,18 @@ char ** get_command(string& a, int& flag)
 
 void display_prompt()
 {
+    //set size of hostname
     char host[50];
 
+    //get the hostname and check to see if there was
+    //an error
     int host_flag = gethostname(host, sizeof host);
     if(host_flag == -1)
     {
         perror("gethostname");
     }
+
+    //get login and if there was an error give message
     char *login = (getpwuid(getuid()))->pw_name;
     if (login == 0)
     {
@@ -192,6 +215,7 @@ int main()
     {
 
         display_prompt();
+
         string command;
         getline(cin, command);
 
@@ -199,23 +223,31 @@ int main()
         //a comment
         int p = command.find('#');
 
+        //if there was a comment then delete everything
+        //after that AKA set a substring from 0 to the '#'
         if (p != -1)
         {
             command = command.substr(0, p);
         }
 
+        //so continue doing and getting while there is
+        //still an && or || or until the end of the
+        //commands
         while(flag != 0 || command != "")
         {
+            //get the command in argv
             char ** argv = get_command(command, flag);
 
 //            cout << command << endl;
 //            cout << flag << endl;
 
+            //if it is empty, then go back to prompt
             if (argv[0] == NULL)
             {
                 break;
             }
 
+            //if the command is exit, exit program
             else if (strcmp(argv[0], "exit") == 0)
             {
                 return 0;
@@ -228,6 +260,7 @@ int main()
 
             error_flag = 0;
 
+            //call the fork and check for error
             int fork_flag = fork();
             if (fork_flag == -1)
             {
@@ -235,6 +268,8 @@ int main()
 
                 exit(1);
             }
+            //if it is the child do the command while checking
+            //for error
             else if (fork_flag == 0)
             {
                 int execvp_flag = execvp(argv[0], argv);
@@ -245,6 +280,7 @@ int main()
                 }
             }
 
+            //if parent then wait for child
             int wait_flag = wait(&error_flag);
             if (wait_flag == -1)
             {
@@ -252,8 +288,11 @@ int main()
                 exit(1);
             }
 //            cout << "Error flag is " << error_flag << endl;
+            //if there was an error
             if (error_flag != 0)
             {
+                //if it was the first in an &&, go back
+                //to prompt
                 if (flag == 2)
                 {
                     break;
