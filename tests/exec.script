@@ -1,0 +1,222 @@
+Script started on Tue 21 Oct 2014 10:13:48 PM PDT
+]0;gzliu@Seokppa: ~/cs100/rshellgzliu@Seokppa:~/cs100/rshell$ exitmakeexitbin/rshell 
+gzliu@Seokppa$ #checking execvp
+gzliu@Seokppa$ ls
+a.out  bin  exec.script  LICENSE  Makefile  README.md  src  test  tests
+gzliu@Seokppa$ pwd
+/home/gzliu/cs100/rshell
+gzliu@Seokppa$ w echo hello world
+hello world
+gzliu@Seokppa$ psd #checking invalid comand   mand
+execvp: No such file or directory
+gzliu@Seokppa$ ls -A -a -F -i -l -  N -t #checking many flags
+total 88
+524721 drwxrwxr-x 6 gzliu gzliu  4096 Oct 21 22:13 ./
+526150 -rw-rw-r-- 1 gzliu gzliu     0 Oct 21 22:13 exec.script
+526161 -rw-r--r-- 1 gzliu gzliu 12288 Oct 21 22:10 .test.swp
+526154 -rw-rw-r-- 1 gzliu gzliu  2734 Oct 21 22:10 test
+526074 -rw-rw-r-- 1 gzliu gzliu  1783 Oct 21 22:08 README.md
+526095 drwxrwxr-x 2 gzliu gzliu  4096 Oct 21 22:06 bin/
+526072 drwxrwxr-x 2 gzliu gzliu  4096 Oct 21 22:06 src/
+524731 drwxrwxr-x 8 gzliu gzliu  4096 Oct 21 20:43 .git/
+524909 drwxrwxr-x 2 gzliu gzliu  4096 Oct 21 14:44 tests/
+526080 -rw-rw-r-- 1 gzliu gzliu   227 Oct 21 12:52 Makefile
+524463 -rwxrwxr-x 1 gzliu gzliu 35215 Oct 21 12:20 a.out*
+524781 -rw-rw-r-- 1 gzliu gzliu  1476 Oct 17 11:17 LICENSE
+524504 drwxrwxr-x 3 gzliu gzliu  4096 Oct 17 11:17 ../
+gzliu@Seokppa$ bin/rshell
+gzliu@Seokppa$ echo I'm hella baller  , I just called myself
+I'm hella baller, I just called myself
+gzliu@Seokppa$ exit
+gzliu@Seokppa$ echo    ho I'm back but still in the program#because I'm the bomb.com
+I'm back but still in the program
+gzliu@Seokppa$ #testing ||
+gzliu@Seokppa$ ls ||pwd
+a.out  bin  exec.script  LICENSE  Makefile  README.md  src  test  tests
+gzliu@Seokppa$ ls || pwd
+a.out  bin  exec.script  LICENSE  Makefile  README.md  src  test  tests
+gzliu@Seokppa$ la ||pwd^[[D^[[D^[[D                pwd
+execvp: No such file or directory
+/home/gzliu/cs100/rshell
+gzliu@Seokppa$ la  || pwd
+execvp: No such file or directory
+/home/gzliu/cs100/rshell
+gzliu@Seokppa$ la ||pwd
+execvp: No such file or directory
+/home/gzliu/cs100/rshell
+gzliu@Seokppa$ la||pwd
+execvp: No such file or directory
+/home/gzliu/cs100/rshell
+gzliu@Seokppa$ la                         ||                      pwd
+execvp: No such file or directory
+/home/gzliu/cs100/rshell
+gzliu@Seokppa$                          ls                         ||                     pwd
+a.out  bin  exec.script  LICENSE  Makefile  README.md  src  test  tests
+gzliu@Seokppa$ lp || psd |  | ls
+lp: Error - no default destination available.
+execvp: No such file or directory
+a.out  bin  exec.script  LICENSE  Makefile  README.md  src  test  tests
+gzliu@Seokppa$ dog || pig || happy || tomato || orange || food || pwd
+execvp: No such file or directory
+execvp: No such file or directory
+execvp: No such file or directory
+execvp: No such file or directory
+execvp: No such file or directory
+execvp: No such file or directory
+/home/gzliu/cs100/rshell
+gzliu@Seokppa$ notacommand || still  nope ||echo     echo I am an actual command || echo OH NO!
+execvp: No such file or directory
+execvp: No such file or directory
+I am an actual command
+gzliu@Seokppa$ ls || pwd || echo I should not see this || echo should only be ls
+a.out  bin  exec.script  LICENSE  Makefile  README.md  src  test  tests
+gzliu@Seokppa$ #testing &&
+gzliu@Seokppa$ ls && pwd
+a.out  bin  exec.script  LICENSE  Makefile  README.md  src  test  tests
+/home/gzliu/cs100/rshell
+gzliu@Seokppa$ ls&& pwd
+a.out  bin  exec.script  LICENSE  Makefile  README.md  src  test  tests
+/home/gzliu/cs100/rshell
+gzliu@Seokppa$ ls &&pwd
+a.out  bin  exec.script  LICENSE  Makefile  README.md  src  test  tests
+/home/gzliu/cs100/rshell
+gzliu@Seokppa$ ls&&pwd
+a.out  bin  exec.script  LICENSE  Makefile  README.md  src  test  tests
+/home/gzliu/cs100/rshell
+gzliu@Seokppa$ ls &&                              &&                       pwd
+a.out  bin  exec.script  LICENSE  Makefile  README.md  src  test  tests
+/home/gzliu/cs100/rshell
+gzliu@Seokppa$               ls             &&                       pwd              
+a.out  bin  exec.script  LICENSE  Makefile  README.md  src  test  tests
+/home/gzliu/cs100/rshell
+gzliu@Seokppa$ #there were spaces in the front and the back and in the middle
+gzliu@Seokppa$ la && echo You should not see me
+execvp: No such file or directory
+gzliu@Seokppa$ pwd && ls && echo hihihi && dog && y touch testy
+/home/gzliu/cs100/rshell
+a.out  bin  exec.script  LICENSE  Makefile  README.md  src  test  tests
+hihihi
+execvp: No such file or directory
+gzliu@Seokppa$ ls && touch testy && echo I see you testy
+a.out  bin  exec.script  LICENSE  Makefile  README.md  src  test  tests
+I see you testy
+gzliu@Seokppa$ ls && echo BEGONE TESTY && rm testy && echo HAHAHAHAHAHAHA && doggie && echo I am invisible!
+a.out  bin  exec.script  LICENSE  Makefile  README.md  src  test  tests  testy
+BEGONE TESTY
+HAHAHAHAHAHAHA
+execvp: No such file or directory
+gzliu@Seokppa$ ls
+a.out  bin  exec.script  LICENSE  Makefile  README.md  src  test  tests
+gzliu@Seokppa$ la && dog && pie && orange && hiya#you should only see one error
+execvp: No such file or directory
+gzliu@Seokppa$ echo hiya && echo the people after me are invisible &  & INVISIBILITY && echo do you believe me?
+hiya
+the people after me are invisible
+execvp: No such file or directory
+gzliu@Seokppa$ #testing ;
+gzliu@Seokppa$ echo beginning; ls; pwd ; potato; echo tomato
+beginning
+a.out  bin  exec.script  LICENSE  Makefile  README.md  src  test  tests
+/home/gzliu/cs100/rshell
+execvp: No such file or directory
+tomato
+gzliu@Seokppa$ hiya ; nope; no command here ; I am silly
+execvp: No such file or directory
+execvp: No such file or directory
+execvp: No such file or directory
+execvp: No such file or directory
+gzliu@Seokppa$ ls  ; pwd; echo testing; echo exit #test with all valid
+a.out  bin  exec.script  LICENSE  Makefile  README.md  src  test  tests
+/home/gzliu/cs100/rshell
+testing
+exit
+gzliu@Seokppa$ ; ls; psd;; pwd; ; ; echo happy days' ;; ; ; ;
+a.out  bin  exec.script  LICENSE  Makefile  README.md  src  test  tests
+execvp: No such file or directory
+/home/gzliu/cs100/rshell
+happy days
+gzliu@Seokppa$ #TESTU ING #
+gzliu@Seokppa$ #nothing should show up
+gzliu@Seokppa$ la || pwd #&& echo if I show up it is bad
+execvp: No such file or directory
+/home/gzliu/cs100/rshell
+gzliu@Seokppa$ ls &#& echo haha invisibility and error
+Rshell: Syntax error near '&'
+gzliu@Seokppa$ l#s && echo feel the r error
+execvp: No such file or directory
+gzliu@Seokppa$ #echo I'm gonna put two#
+gzliu@Seokppa$ echo because I am pretty#weird
+because I am pretty
+gzliu@Seokppa$ echo what about at the end?#
+what about at the end?
+gzliu@Seokppa$ #le  LEST  TS DO SOME COMBINATIONS!
+gzliu@Seokppa$ pwd && la || echo haha priority is strictly left to right# because I suck!
+/home/gzliu/cs100/rshell
+execvp: No such file or directory
+haha priority is strictly left to right
+gzliu@Seokppa$ la || pwd && echo MWAHAHAHAHAHAHAHA && butt ;    ; I am the best || no || hi ||ls && pwd
+execvp: No such file or directory
+/home/gzliu/cs100/rshell
+MWAHAHAHAHAHAHAHA
+execvp: No such file or directory
+execvp: No such file or directory
+execvp: No such file or directory
+execvp: No such file or directory
+a.out  bin  exec.script  LICENSE  Makefile  README.md  src  test  tests
+/home/gzliu/cs100/rshell
+gzliu@Seokppa$ echo How are you doing && echo oh my && echo I'm sorry && I'm jk ||echo I'm not that jk because I am sure you are doing                           you are probably fine; echo because you are grading me#and I am fab
+How are you doing
+oh my
+I'm sorry
+execvp: No such file or directory
+I'm not that jk because you are probably fine
+because you are grading me
+gzliu@Seokppa$ la; huhuhuhuhuhuhu fufufufufuf||^[[D                 || fufufufufuf ||echo I'm sorry && echo like super sorry && my cret ator is strange || echo no she's fabulous like me#but not really
+execvp: No such file or directory
+execvp: No such file or directory
+execvp: No such file or directory
+I'm sorry
+like super sorry
+execvp: No such file or directory
+no she's fabulous like me
+gzliu@Seokppa$ echo I'm serious always && la || pwd && echo ju  I kid || echo Ha! More invisibility for me!
+I'm serious always
+execvp: No such file or directory
+/home/gzliu/cs100/rshell
+I kid
+gzliu@Seokppa$ #Now for some weirder edge cases
+gzliu@Seokppa$ e 
+gzliu@Seokppa$ echo I        #just tested an empty string
+gzliu@Seokppa$                   
+gzliu@Seokppa$ #MANY SPACES JUST TESTES D
+gzliu@Seokppa$ ;;;|||&&;|&&;| #HAVE SOME DELIMITERS
+gzliu@Seokppa$ |||&&& #NO otice i   I   I give errors for && and || normally but not in the beginning
+gzliu@Seokppa$                       ls                                                            #################################### and     
+gzliu@Seokppa$ # Exit; kdjgsdjbdbexit; exitskjdc,sdmn; sfdbdjexitdskjfhawiue #exit wont work like this
+execvp: No such file or directory
+execvp: No such file or directory
+execvp: No such file or directory
+execvp: No such file or directory
+gzliu@Seokppa$ echo DON"T DO IT        'T DO IT &&| echo I just did #error
+Rshell: Syntax error near '&'
+gzliu@Seokppa$ echo Well take this ||& echo tears #error
+Rshell: Syntax error near '|'
+gzliu@Seokppa$ ls && #  
+Rshell: Syntax error near '&'
+gzliu@Seokppa$ ls &&& pwd
+Rshell: Syntax error near '&'
+gzliu@Seokppa$ ls&&|pwd
+Rshell: Syntax error near '&'
+gzliu@Seokppa$ ls||&pwd
+Rshell: Syntax error near '|'
+gzliu@Seokppa$ ls||;pwd
+Rshell: Syntax error near '|'
+gzliu@Seokppa$ ls ||
+Rshell: Syntax error near '|'
+gzliu@Seokppa$ #DONE, THANK YOU!!!
+gzliu@Seokppa$ exit
+]0;gzliu@Seokppa: ~/cs100/rshellgzliu@Seokppa:~/cs100/rshell$ #exit works!
+]0;gzliu@Seokppa: ~/cs100/rshellgzliu@Seokppa:~/cs100/rshell$ exit
+exit
+
+Script done on Tue 21 Oct 2014 10:37:06 PM PDT
