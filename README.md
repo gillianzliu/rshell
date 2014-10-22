@@ -9,7 +9,7 @@ Gillian Liu
 
 This program is a simple shell for Linux. It is capable of preforming most
 of the commands that bash is able to do, but does not support built in
-bash commands such as cd. It however has its own built in command exit to
+bash commands such as `cd`. It however has its own built in command exit to
 terminate the program.
 
 ##Files
@@ -40,10 +40,10 @@ exec.script
 ##How to run
 
 1. Clone this directory to your local machine.
-2. cd into the rshell directory.
+2. `cd` into the rshell directory.
 3. call make
-4. cd into bin
-5. Call rshell
+4. `cd` into bin
+5. Call Rshell
 
 Rshell will open in the terminal and you will be able to use it.
 
