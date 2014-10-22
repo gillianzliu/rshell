@@ -298,6 +298,8 @@ int main()
                     break;
                 }
             }
+            //if there wasn't an error and it was in an  ||
+            //statement then go back to prompt
             else if (flag == 1)
             {
                 break;
