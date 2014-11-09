@@ -17,7 +17,13 @@ using namespace std;
 
 //for directories, it is ordered by alphabet and
 //by path, not foldername
-bool le(char* left, char* right)
+bool ledir(char* left, char* right)
+{
+    //FIXME
+    return true;
+}
+
+bool lefile(char* left, char* right)
 {
     //FIXME
     return true;
@@ -55,15 +61,15 @@ int setFlag(int argc, char* argv[], vector<char*>& d,
         {
             if (argv[i][j] == 'R' || argv[i][j] == 'r')
             {
-                flag = flag & FLAG_r;
+                flag = flag | FLAG_r;
             }
             else if (argv[i][j] == 'L' || argv[i][j] == 'l')
             {
-                flag = flag & FLAG_l;
+                flag = flag | FLAG_l;
             }
             else if (argv[i][j] == 'A' || argv[i][j] == 'a')
             {
-                flag = flag & FLAG_a;
+                flag = flag | FLAG_a;
             }
             else
             {
@@ -78,15 +84,12 @@ int setFlag(int argc, char* argv[], vector<char*>& d,
     return flag;
 }
 
-void outLong(vector<char*> files)
+void outLong(const vector<char*>& files)
 {
     struct stat sb;
 
-    cout << "=========================" << endl;
-
     for(unsigned i = 0; i < files.size(); ++i)
     {
-        cout << files.at(i) << endl;
         int err = lstat(files.at(i), &sb);
         if (err != 0)
         {
@@ -95,11 +98,11 @@ void outLong(vector<char*> files)
         }
         if (S_ISDIR(sb.st_mode))
         {
-            cout << 'd';
+            //cout << 'd';
         }
         else
         {
-            cout << '-';
+            //cout << '-';
         }
     }
     return;
@@ -108,10 +111,10 @@ void outLong(vector<char*> files)
 void ls(int flags, vector<char*>& dir)
 {
     vector<char*> dir_r;
+    vector<char*> s;
 
     for(unsigned i = 0; i < dir.size(); ++i)
     {
-        vector<char*> s;
         DIR *dirp = opendir(dir.at(i));
         if (dirp == 0)
         {
@@ -123,22 +126,50 @@ void ls(int flags, vector<char*>& dir)
         while((direntp = readdir(dirp)))
         {
             char* f = direntp->d_name;
-            cout << f << endl;
+            char* file;
             if (!(flags & FLAG_a) && f[0] == '.')
             {
                 continue;
             }
-            s.push_back(f);
+            if (strncmp(dir.at(i), ".", 2) != 0 &&
+                    strncmp(dir.at(i), "./", 3) != 0)
+            {
+                if ((dir.at(i))[strlen(dir.at(i)) - 1] != '/')
+                {
+                    char temp[] = "/";
+                    file = new char[strlen(dir.at(i)) + strlen(f) + 2];
+                    strcpy(file, dir.at(i));
+                    strcat(file, temp);
+                    strcat(file, f);
+                }
+                else
+                {
+                    file = new char[strlen(dir.at(i)) + strlen(f) + 2];
+                    strcpy(file, dir.at(i));
+                    strcat(file, f);
+                }
 
 
+            }
+
+            s.push_back(file);
         }
         if (errno != 0)
         {
             perror("readdir");
             exit(1);
         }
-
+        if (closedir(dirp) != 0)
+        {
+            perror("closedir");
+            exit(1);
+        }
         outLong(s);
+
+        for (int i = s.size() - 1; i >= 0; --i)
+        {
+            delete [] s.at(i);
+        }
 
         if (flags & FLAG_r)
         {
