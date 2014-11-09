@@ -15,4 +15,3 @@ ls: src/ls.cpp
 	then mkdir bin;\
 	fi
 	$(G++) src/ls.cpp -o bin/ls
-
