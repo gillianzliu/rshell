@@ -191,7 +191,7 @@ void outLong(const vector<char*>& files, const char* dir, const int& flags,
 
     for(unsigned i = 0; i < files.size(); ++i)
     {
-        path = new char[strlen(files.at(i)) + /*strlen(dir)*/ + 1  + 2];
+        path = new char[strlen(files.at(i)) + strlen(dir) + 2];
         strcpy(path, dir);
         if (dir[strlen(dir) - 1] != '/')
         {
@@ -258,7 +258,7 @@ void outLong(const vector<char*>& files, const char* dir, const int& flags,
     return;
 }
 
-void ls(int flags, vector<char*>& dir)
+void ls(int flags, const vector<char*>& dir)
 {
     vector<char*> dir_r;
 
@@ -267,6 +267,7 @@ void ls(int flags, vector<char*>& dir)
         vector<char*> s;
         int total_block = 0;
         struct stat sb;
+        cout << dir.at(i);
         DIR *dirp = opendir(dir.at(i));
         if (dirp == 0)
         {
@@ -312,7 +313,7 @@ void ls(int flags, vector<char*>& dir)
                 delete [] directory;
             }
 
-            cout << "FIle: " << file << endl;
+            //cout << "FIle: " << file << endl;
             s.push_back(file);
         }
         if (errno != 0)
@@ -325,11 +326,11 @@ void ls(int flags, vector<char*>& dir)
             perror("closedir");
             exit(1);
         }
-        cout << "===================================" << endl;
-        for (int j = s.size() - 1; j >= 0; --j)
-          {
-          cout << s.at(j) << endl;
-          }
+        //cout << "===================================" << endl;
+        //for (int j = s.size() - 1; j >= 0; --j)
+        //  {
+        //  cout << s.at(j) << endl;
+        //  }
         cout << "===================================" << endl;
         //merge_sort(s, 0, s.size());
         //merge_sort(dir_r, 0, dir_r.size());
@@ -393,7 +394,8 @@ int main(int argc, char* argv[])
     int flags = setFlag(argc, argv, dirs, files, a);
     if (dirs.size() == 0 && files.size() == 0 && argc - a == 1)
     {
-        char* d = new char('.');
+        char* d = new char[2];
+        strcpy(d, ".");
         dirs.push_back(d);
     }
     ls(flags, dirs);

@@ -1,4 +1,4 @@
-G++ = g++ -Wall -Werror -ansi -pedantic
+G++ = g++ -Wall -Werror -ansi -pedantic -g
 all: rshell ls
 rshell: src/main.cpp
 	if [ ! -d "./bin" ];\
