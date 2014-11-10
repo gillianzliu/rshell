@@ -258,16 +258,14 @@ void outLong(const vector<char*>& files, const char* dir, const int& flags,
     return;
 }
 
-void ls(int flags, const vector<char*>& dir)
+void ls(int flags, vector<char*>& dir)
 {
-    vector<char*> dir_r;
-
     for(unsigned i = 0; i < dir.size(); ++i)
     {
+        vector<char*> dir_r;
         vector<char*> s;
         int total_block = 0;
         struct stat sb;
-        cout << dir.at(i);
         DIR *dirp = opendir(dir.at(i));
         if (dirp == 0)
         {
@@ -292,7 +290,7 @@ void ls(int flags, const vector<char*>& dir)
             file = new char[strlen(f) + 1];
             strcpy(file, f);
 
-            directory = new char[strlen(f) + strlen(dir.at(i)) + 2];
+            directory = new char[strlen(file) + strlen(dir.at(i)) + 2];
             strcpy(directory, dir.at(i));
             strcat(directory, "/");
             strcat(directory, file);
@@ -334,10 +332,6 @@ void ls(int flags, const vector<char*>& dir)
         cout << "===================================" << endl;
         //merge_sort(s, 0, s.size());
         //merge_sort(dir_r, 0, dir_r.size());
-        for (unsigned j = 0; j < dir_r.size(); ++j)
-        {
-            cout << "Directory #" << j << ": " << dir_r.at(j);
-        }
         /*cout << "==========================" << endl;
           for (int j = s.size() - 1; j >= 0; --j)
           {
@@ -353,36 +347,34 @@ void ls(int flags, const vector<char*>& dir)
             outnorm(s, dir.at(i), flags);
         }
 
-        for (int i = s.size() - 1; i >= 0; --i)
+        for (unsigned i = 0; i < s.size(); ++i)
         {
-            if (s.at(i) == 0)
+            if (s.at(i) != 0)
             {
-                continue;
+                delete [] s.at(i);
             }
-            delete [] s.at(i);
         }
 
-        if (flags & FLAG_R)
+        if (flags & FLAG_R && dir_r.size() != 0)
         {
             ls(flags, dir_r);
         }
 
-        for (int i = dir_r.size() - 1; i >= 0; --i)
+        /*for (unsigned i = 0; i < dir_r.size(); ++i)
         {
-            if (dir_r.at(i) == 0)
+            cout << dir_r.at(i) << endl;
+            if (dir_r.at(i) != 0)
             {
-                continue;
+                delete [] dir_r.at(i);
             }
-            delete [] dir_r.at(i);
-        }
+        }*/
     }
-    for (int i = dir.size() - 1; i >= 0; --i)
+    for (unsigned i = 0; i < dir.size(); ++i)
     {
-        if (dir.at(i) == 0)
+        if (dir.at(i) != 0)
         {
-            continue;
+            delete [] dir.at(i);
         }
-        delete [] dir.at(i);
     }
 }
 
