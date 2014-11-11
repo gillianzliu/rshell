@@ -27,11 +27,6 @@ using namespace std;
 
 //for directories, it is ordered by alphabet and
 //by path, not foldername
-bool ledir(char* left, char* right)
-{
-    //FIXME
-    return true;
-}
 
 bool lfile(const char* left, const char* right)
 {
@@ -58,7 +53,7 @@ bool lfile(const char* left, const char* right)
     {
         return false;
     }
-    while(right[i] != '\0' && left[j] != '\0')
+    while(left[i] != '\0' && right[j] != '\0')
     {
         if (!isalnum(left[i]) || !isalnum(right[j]))
         {
@@ -70,9 +65,11 @@ bool lfile(const char* left, const char* right)
             {
                 ++j;
             }
+
             continue;
         }
-        if (tolower(right[i]) == tolower(left[j]))
+
+        if (tolower(left[i]) == tolower(right[j]))
         {
             ++i;
             ++j;
@@ -87,11 +84,50 @@ bool lfile(const char* left, const char* right)
             return false;
         }
     }
-    if (right[i] == '\0' && left[j] == '\0')
+    if (left[i] == 0 && right[j] == 0)
     {
-        return (strlen(left) < strlen(right));
+        if (strlen(left) != strlen(right))
+        {
+            return (strlen(left) < strlen(right));
+        }
+        while(left[i] != '\0' && !isalnum(left[i]))
+        {
+            ++i;
+        }
+        while(right[j] != '\0' && !isalnum(right[j]))
+        {
+            ++j;
+        }
+        while(right[i] != '\0' && left[j] != '\0')
+        {
+            if (!isalnum(left[i]) || !isalnum(right[j]))
+            {
+                if(!isalnum(left[i]))
+                {
+                    ++i;
+                }
+                if (!isalnum(right[j]))
+                {
+                    ++j;
+                }
+                continue;
+            }
+            if (left[i] == right[j])
+            {
+                ++i;
+                ++j;
+            }
+            else if (left[i] < right[j])
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
     }
-    else if (right + i == 0)
+    else if (left[i] == '\0')
     {
         return true;
     }
@@ -136,19 +172,13 @@ void merge(vector<char*>& vec, int begin, int mid, int end)
 
     for (i = begin, index = 0; index < temp.size() ; ++i, ++index)
     {
-        //cout << temp.at(index) << ' ';
         vec.at(i) = temp.at(index);
     }
-    //cout << endl;
     return;
 }
 
 void merge_sort(vector<char*>& vec, int begin, int end)
 {
-    /*for (int i = begin; i <= end; ++i)
-    {
-        cout << vec.at(i) << ' ';
-    }*/
     if (begin == end)
     {
         return;
@@ -222,6 +252,41 @@ int setFlag(int argc, char* argv[], vector<char*>& d,
     return flag;
 }
 
+void get_color(string& color, const char* file, const struct stat& sb)
+{
+    if (file[0] == '.')
+    {
+        color += "100";
+    }
+    else
+    {
+        color += "49";
+    }
+    if (S_ISLNK(sb.st_mode))
+    {
+        color += ";1;96";
+    }
+    else if (S_ISDIR(sb.st_mode))
+    {
+        color += ";1;94";
+    }
+    else if (S_ISREG(sb.st_mode) && sb.st_mode & 0111)
+    {
+        color += ";92";
+    }
+    else
+    {
+        color += ";39";
+    }
+
+    color += "m";
+}
+
+void get_columns(const vector<char*>& files)
+{
+    ;
+}
+
 void outnorm(const vector<char*>& files, const char* dir, const int& flags)
 {
     if (dir == 0)
@@ -247,7 +312,7 @@ void outnorm(const vector<char*>& files, const char* dir, const int& flags)
     int counter = 0;
     char* path;
     struct stat sb;
-    string color_default = "\033[39;49m";
+    string color_default = "\033[0m";
 
     for (unsigned i = 0; i < files.size() ; ++i)
     {
@@ -275,43 +340,18 @@ void outnorm(const vector<char*>& files, const char* dir, const int& flags)
             perror("stat");
             exit(1);
         }
-        if (files.at(i)[0] == '.')
-        {
-            color += "100";
-        }
-        else
-        {
-            color += "49";
-        }
-        if (S_ISLNK(sb.st_mode))
-        {
-            color += ";96";
-        }
-        else if (S_ISDIR(sb.st_mode))
-        {
-            color += ";94";
-        }
-        else if (S_ISREG(sb.st_mode) && sb.st_mode & 0111)
-        {
-            color += ";92";
-        }
-        else
-        {
-            color += ";39";
-        }
 
-
-        color += "m";
+        get_color(color, files.at(i), sb);
 
         if (counter == 0)
         {
             cout << color << files.at(i);
             counter += strlen(files.at(i));
         }
-        else if (strlen(files.at(i)) + counter + 1 <= 80)
+        else if (strlen(files.at(i)) + counter + 2 <= 80)
         {
-            cout << ' ' << color << files.at(i);
-            counter += strlen(files.at(i)) + 1;
+            cout << "  "  << color << files.at(i);
+            counter += strlen(files.at(i)) + 2;
         }
         else
         {
@@ -343,8 +383,11 @@ void outLong(const vector<char*>& files, const char* dir, const int& flags,
         cout << "total " << total/2 << endl; //i have no idea why this is twice
         //the value ls gives
     }
+    string color_default = "\033[0m";
     for(unsigned i = 0; i < files.size(); ++i)
     {
+        string color = "\033[";
+
         if (dir != 0)
         {
             path = new char[strlen(files.at(i)) + strlen(dir) + 2];
@@ -413,15 +456,12 @@ void outLong(const vector<char*>& files, const char* dir, const int& flags,
         string tim = asctime(ptm);
         cout << tim.substr(4, 12) << ' ';
 
-        cout << files.at(i);
-        cout << endl;
+        get_color(color, files.at(i),sb);
+
+        cout << color << files.at(i);
+        cout << color_default << endl;
         delete [] path;
     }
-
-    /*if (flags & FLAG_R)
-    {
-        cout << endl;
-    }*/
     return;
 }
 
