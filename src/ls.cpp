@@ -241,15 +241,90 @@ void outnorm(const vector<char*>& files, const char* dir, const int& flags)
         {
             cout << dir;
         }
-        cout << ":" << endl << endl;
+        cout << ":" << endl;
     }
+
+    int counter = 0;
+    char* path;
+    struct stat sb;
+    string color_default = "\033[39;49m";
 
     for (unsigned i = 0; i < files.size() ; ++i)
     {
-        cout << files.at(i) << endl;
-    }
-    //int columns;
+        string color = "\033[";
 
+        if (dir != 0)
+        {
+            path = new char[strlen(files.at(i)) + strlen(dir) + 2];
+            strcpy(path, dir);
+            if (dir[strlen(dir) - 1] != '/')
+            {
+                char temp[] = "/";
+                strcat(path, temp);
+            }
+            strcat(path, files.at(i));
+        }
+        else
+        {
+            path = new char[strlen(files.at(i)) + 1];
+            strcpy(path, files.at(i));
+        }
+        int err = lstat(path, &sb);
+        if (err != 0)
+        {
+            perror("stat");
+            exit(1);
+        }
+        if (files.at(i)[0] == '.')
+        {
+            color += "100";
+        }
+        else
+        {
+            color += "49";
+        }
+        if (S_ISLNK(sb.st_mode))
+        {
+            color += ";96";
+        }
+        else if (S_ISDIR(sb.st_mode))
+        {
+            color += ";94";
+        }
+        else if (S_ISREG(sb.st_mode) && sb.st_mode & 0111)
+        {
+            color += ";92";
+        }
+        else
+        {
+            color += ";39";
+        }
+
+
+        color += "m";
+
+        if (counter == 0)
+        {
+            cout << color << files.at(i);
+            counter += strlen(files.at(i));
+        }
+        else if (strlen(files.at(i)) + counter + 1 <= 80)
+        {
+            cout << ' ' << color << files.at(i);
+            counter += strlen(files.at(i)) + 1;
+        }
+        else
+        {
+            counter = strlen(files.at(i));
+            cout << endl << color << files.at(i);
+        }
+
+        cout << color_default;
+
+        delete [] path;
+    }
+
+    cout << endl;
     return;
 }
 
@@ -343,10 +418,10 @@ void outLong(const vector<char*>& files, const char* dir, const int& flags,
         delete [] path;
     }
 
-    if (flags & FLAG_R)
+    /*if (flags & FLAG_R)
     {
         cout << endl;
-    }
+    }*/
     return;
 }
 
@@ -428,11 +503,6 @@ void ls(int flags, vector<char*>& dir)
 
         merge_sort(s, 0, s.size() - 1);
 
-        if (dir_r.size() != 0)
-        {
-            merge_sort(dir_r, 0, dir_r.size() - 1);
-        }
-
         if (flags & FLAG_l)
         {
             outLong(s, dir.at(i), flags, total_block);
@@ -441,18 +511,28 @@ void ls(int flags, vector<char*>& dir)
         {
             outnorm(s, dir.at(i), flags);
         }
-
-        for (unsigned i = 0; i < s.size(); ++i)
+        if (i != dir.size() - 1 || dir_r.size() != 0)
         {
-            if (s.at(i) != 0)
+            cout << endl;
+        }
+
+        for (unsigned j = 0; j < s.size(); ++j)
+        {
+            if (s.at(j) != 0)
             {
-                delete [] s.at(i);
+                delete [] s.at(j);
             }
         }
 
         if (flags & FLAG_R && dir_r.size() != 0)
         {
+            merge_sort(dir_r, 0, dir_r.size() - 1);
+
             ls(flags, dir_r);
+            if (i != dir.size() - 1)
+            {
+                cout << endl;
+            }
         }
     }
     for (unsigned i = 0; i < dir.size(); ++i)
