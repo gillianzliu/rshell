@@ -380,7 +380,7 @@ void ls(int flags, vector<char*>& dir)
 
 int main(int argc, char* argv[])
 {
-    int a = 0;
+    int a = 0; //initialize counter for number of flags
     vector<char*> dirs;
     vector<char*> files;
     int flags = setFlag(argc, argv, dirs, files, a);
