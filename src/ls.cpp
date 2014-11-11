@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cstring>
+#include <cctype>
 
 #define FLAG_a 1
 #define FLAG_R 2
@@ -32,23 +33,83 @@ bool ledir(char* left, char* right)
     return true;
 }
 
-bool lefile(char* left, char* right)
+bool lfile(const char* left, const char* right)
 {
-    //FIXME
-    return true;
+    int i = 0;
+    int j = 0;
+
+    while(left[i] != '\0' && !isalnum(left[i]))
+    {
+        ++i;
+    }
+    while(right[j] != '\0' && !isalnum(right[j]))
+    {
+        ++j;
+    }
+    if (left[i] == '\0' && right[j] == '\0')
+    {
+        return i < j;
+    }
+    if (left[i] == '\0')
+    {
+        return true;
+    }
+    if (right[j] == '\0')
+    {
+        return false;
+    }
+    while(right[i] != '\0' && left[j] != '\0')
+    {
+        if (!isalnum(left[i]) || !isalnum(right[j]))
+        {
+            if(!isalnum(left[i]))
+            {
+                ++i;
+            }
+            if (!isalnum(right[j]))
+            {
+                ++j;
+            }
+            continue;
+        }
+        if (tolower(right[i]) == tolower(left[j]))
+        {
+            ++i;
+            ++j;
+            continue;
+        }
+        else if (tolower(left[i]) < tolower(right[j]))
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    if (right[i] == '\0' && left[j] == '\0')
+    {
+        return (strlen(left) < strlen(right));
+    }
+    else if (right + i == 0)
+    {
+        return true;
+    }
+
+    return false;
 }
 
-void merge(vector<char*>& vec, int mid)
+void merge(vector<char*>& vec, int begin, int mid, int end)
 {
-    vector<char*> temp(vec.size());
+    vector<char*> temp(end - begin + 1);
 
-    int i = 0;
-    unsigned j = mid;
+    int i = begin;
+    int j = mid + 1;
     unsigned index = 0;
 
-    while(i < mid && j < vec.size())
+    while(i <= mid && j <= end)
     {
-        if (strcmp(vec.at(i), vec.at(j)) <= 0)
+        if (lfile(vec.at(i), vec.at(j)))
         {
             temp.at(index) = vec.at(i);
             ++i;
@@ -60,26 +121,34 @@ void merge(vector<char*>& vec, int mid)
         }
         ++index;
     }
-    while(i < mid)
+    while(i <= mid)
     {
         temp.at(index) = vec.at(i);
         ++i;
         ++index;
     }
-    while(j < vec.size())
+    while(j <= end)
     {
         temp.at(index) = vec.at(j);
         ++j;
         ++index;
     }
 
-    vec = temp;
-
+    for (i = begin, index = 0; index < temp.size() ; ++i, ++index)
+    {
+        //cout << temp.at(index) << ' ';
+        vec.at(i) = temp.at(index);
+    }
+    //cout << endl;
     return;
 }
 
 void merge_sort(vector<char*>& vec, int begin, int end)
 {
+    /*for (int i = begin; i <= end; ++i)
+    {
+        cout << vec.at(i) << ' ';
+    }*/
     if (begin == end)
     {
         return;
@@ -89,7 +158,7 @@ void merge_sort(vector<char*>& vec, int begin, int end)
     merge_sort(vec, begin, mid);
     merge_sort(vec, mid + 1, end);
 
-    merge(vec, mid + 1);
+    merge(vec, begin, mid, end);
 }
 
 int setFlag(int argc, char* argv[], vector<char*>& d,
@@ -155,7 +224,11 @@ int setFlag(int argc, char* argv[], vector<char*>& d,
 
 void outnorm(const vector<char*>& files, const char* dir, const int& flags)
 {
-    if (flags & FLAG_R)
+    if (dir == 0)
+    {
+        ;
+    }
+    else if (flags & FLAG_R)
     {
         if (dir[strlen(dir) - 1] == '/')
         {
@@ -186,19 +259,33 @@ void outLong(const vector<char*>& files, const char* dir, const int& flags,
     struct stat sb;
     char* path;
 
-    cout << "total " << total/2 << endl; //i have no idea why this is twice
-    //the value ls gives
-
+    if (dir != 0)
+    {
+        if (flags & FLAG_R)
+        {
+            cout << dir << ':' << endl;
+        }
+        cout << "total " << total/2 << endl; //i have no idea why this is twice
+        //the value ls gives
+    }
     for(unsigned i = 0; i < files.size(); ++i)
     {
-        path = new char[strlen(files.at(i)) + strlen(dir) + 2];
-        strcpy(path, dir);
-        if (dir[strlen(dir) - 1] != '/')
+        if (dir != 0)
         {
-            char temp[] = "/";
-            strcat(path, temp);
+            path = new char[strlen(files.at(i)) + strlen(dir) + 2];
+            strcpy(path, dir);
+            if (dir[strlen(dir) - 1] != '/')
+            {
+                char temp[] = "/";
+                strcat(path, temp);
+            }
+            strcat(path, files.at(i));
         }
-        strcat(path, files.at(i));
+        else
+        {
+            path = new char[strlen(files.at(i)) + 1];
+            strcpy(path, files.at(i));
+        }
         int err = lstat(path, &sb);
         if (err != 0)
         {
@@ -255,6 +342,11 @@ void outLong(const vector<char*>& files, const char* dir, const int& flags,
         cout << endl;
         delete [] path;
     }
+
+    if (flags & FLAG_R)
+    {
+        cout << endl;
+    }
     return;
 }
 
@@ -279,20 +371,30 @@ void ls(int flags, vector<char*>& dir)
             char* f = direntp->d_name;
             char* file;
             char* directory;
-            if (!(flags & FLAG_a) && *f == '.')
+            if (!(flags & FLAG_a) && f[0] == '.')
             {
                 continue;
             }
-            if (flags & FLAG_R && strncmp(f, "..", 3) == 0)
-            {
-                continue;
-            }
+
             file = new char[strlen(f) + 1];
             strcpy(file, f);
-
-            directory = new char[strlen(file) + strlen(dir.at(i)) + 2];
-            strcpy(directory, dir.at(i));
-            strcat(directory, "/");
+            if (flags & FLAG_R && (strncmp(f, "..", 3) == 0 ||
+                        strncmp(f, ".", 2) == 0))
+            {
+                s.push_back(file);
+                continue;
+            }
+            if ((dir.at(i))[strlen(dir.at(i)) - 1] == '/')
+            {
+                directory = new char[strlen(file) + strlen(dir.at(i)) + 1];
+                strcpy(directory, dir.at(i));
+            }
+            else
+            {
+                directory = new char[strlen(file) + strlen(dir.at(i)) + 2];
+                strcpy(directory, dir.at(i));
+                strcat(directory, "/");
+            }
             strcat(directory, file);
 
 
@@ -311,7 +413,6 @@ void ls(int flags, vector<char*>& dir)
                 delete [] directory;
             }
 
-            //cout << "FIle: " << file << endl;
             s.push_back(file);
         }
         if (errno != 0)
@@ -324,19 +425,13 @@ void ls(int flags, vector<char*>& dir)
             perror("closedir");
             exit(1);
         }
-        //cout << "===================================" << endl;
-        //for (int j = s.size() - 1; j >= 0; --j)
-        //  {
-        //  cout << s.at(j) << endl;
-        //  }
-        cout << "===================================" << endl;
-        //merge_sort(s, 0, s.size());
-        //merge_sort(dir_r, 0, dir_r.size());
-        /*cout << "==========================" << endl;
-          for (int j = s.size() - 1; j >= 0; --j)
-          {
-          cout << s.at(j) << endl;
-          }*/
+
+        merge_sort(s, 0, s.size() - 1);
+
+        if (dir_r.size() != 0)
+        {
+            merge_sort(dir_r, 0, dir_r.size() - 1);
+        }
 
         if (flags & FLAG_l)
         {
@@ -359,15 +454,6 @@ void ls(int flags, vector<char*>& dir)
         {
             ls(flags, dir_r);
         }
-
-        /*for (unsigned i = 0; i < dir_r.size(); ++i)
-        {
-            cout << dir_r.at(i) << endl;
-            if (dir_r.at(i) != 0)
-            {
-                delete [] dir_r.at(i);
-            }
-        }*/
     }
     for (unsigned i = 0; i < dir.size(); ++i)
     {
@@ -384,6 +470,24 @@ int main(int argc, char* argv[])
     vector<char*> dirs;
     vector<char*> files;
     int flags = setFlag(argc, argv, dirs, files, a);
+    if (files.size() != 0)
+    {
+        if (flags & FLAG_l)
+        {
+            outLong(files, 0, flags, 0);
+        }
+        else
+        {
+            outnorm(files, 0, flags);
+        }
+    }
+    for (unsigned i = 0; i < files.size(); ++i)
+    {
+        if (files.at(i) != 0)
+        {
+            delete [] files.at(i);
+        }
+    }
     if (dirs.size() == 0 && files.size() == 0 && argc - a == 1)
     {
         char* d = new char[2];
