@@ -601,6 +601,7 @@ void ls(int flags, vector<char*>& dir)
 {
     for(unsigned i = 0; i < dir.size(); ++i)
     {
+        errno = 0;
         vector<char*> dir_r;
         vector<char*> s;
         int total_block = 0;
