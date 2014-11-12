@@ -584,7 +584,7 @@ void outLong(const vector<char*>& files, const char* dir, const int& flags,
 
         cout << '\t';
 
-        struct tm* ptm = gmtime( &sb.st_mtime);
+        struct tm* ptm = localtime( &sb.st_mtime);
         string tim = asctime(ptm);
         cout << tim.substr(4, 12) << ' ';
 
@@ -672,8 +672,10 @@ void ls(int flags, vector<char*>& dir)
             perror("closedir");
             exit(1);
         }
-
-        merge_sort(s, 0, s.size() - 1);
+        if (s.size() != 0)
+        {
+            merge_sort(s, 0, s.size() - 1);
+        }
 
         if (flags & FLAG_l)
         {
