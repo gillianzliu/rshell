@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <cstring>
 #include <cctype>
+#include <iomanip>
 
 #define FLAG_a 1
 #define FLAG_R 2
@@ -282,9 +283,102 @@ void get_color(string& color, const char* file, const struct stat& sb)
     color += "m";
 }
 
-void get_columns(const vector<char*>& files)
+vector<int> get_columns(const vector<char*>& files)
 {
-    ;
+    vector<int> total_col;
+    unsigned max_size = 0;
+    unsigned total = 0;
+    for (unsigned i = 0; i < files.size(); ++i)
+    {
+        if (strlen(files.at(i)) > max_size)
+        {
+            max_size = strlen(files.at(i));
+        }
+        total += strlen(files.at(i));
+    }
+    if (max_size >= 80)
+    {
+        total_col.push_back(80);
+        return total_col;
+    }
+    int row_num = total / 80;
+    if ((total + (2 * (files.size() - 1)))/80 == 0)
+    {
+        for (unsigned i = 0; i < files.size(); ++i)
+        {
+            total_col.push_back(strlen(files.at(i)));
+        }
+        return total_col;
+    }
+    int col_num = 2;
+    if (row_num != 0)
+    {
+        col_num = total / (row_num + 1);
+    }
+
+    bool done = false;
+
+    while (!done)
+    {
+        vector<int> col(col_num);
+        int total_row = 0;
+        unsigned max = 0;
+        int count;
+        int c = 0;
+        for (unsigned i = 0; i < files.size(); i += count)
+        {
+            count = 0;
+            for (unsigned row = c; row < files.size(); row += col_num)
+            {
+                count++;
+            }
+            //cout << count << endl;
+            max = 0;
+            for(unsigned j = i; j < i + count; ++j)
+            {
+                //cout << "Max: " << max << endl;
+                //cout << files.at(j) << ": " << strlen(files.at(j)) << endl;
+                if(strlen(files.at(j)) > max)
+                {
+                    max = strlen(files.at(j));
+                }
+            }
+            //cout << "+++++" << endl;
+            //cout << "Max for column " << i << ": " << max << endl;
+            //cout << "+++++++++++++" << endl;
+            col.at(c) = max;
+            ++c;
+            total_row += max;
+        }
+        if (total_row + (2 * (col_num - 1)) > 80)
+        {
+            total_row = 0;
+            if (total_col.size() == 0)
+            {
+                total_col = col;
+            }
+            for (unsigned p = 0; p < total_col.size(); ++p)
+            {
+                total_row += total_col.at(p);
+            }
+            if(total_col.size() == 0 ||
+                ((total_row + (2 * (total_col.size() - 1))) > 80))
+            {
+                --col_num;
+            }
+            else
+            {
+                done = true;
+                return total_col;
+            }
+        }
+        else
+        {
+            col_num++;
+            total_col = col;
+        }
+    }
+    return total_col;
 }
 
 void outnorm(const vector<char*>& files, const char* dir, const int& flags)
@@ -309,62 +403,100 @@ void outnorm(const vector<char*>& files, const char* dir, const int& flags)
         cout << ":" << endl;
     }
 
-    int counter = 0;
     char* path;
     struct stat sb;
     string color_default = "\033[0m";
-
-    for (unsigned i = 0; i < files.size() ; ++i)
+    vector<int> col = get_columns(files);
+    vector<int> rows;
+    for (unsigned c = 0; c < col.size(); ++c)
     {
-        string color = "\033[";
-
-        if (dir != 0)
+        int count = 0;
+        for (unsigned row = c; row < files.size(); row += col.size())
         {
-            path = new char[strlen(files.at(i)) + strlen(dir) + 2];
-            strcpy(path, dir);
-            if (dir[strlen(dir) - 1] != '/')
-            {
-                char temp[] = "/";
-                strcat(path, temp);
-            }
-            strcat(path, files.at(i));
+            count++;
         }
-        else
-        {
-            path = new char[strlen(files.at(i)) + 1];
-            strcpy(path, files.at(i));
-        }
-        int err = lstat(path, &sb);
-        if (err != 0)
-        {
-            perror("stat");
-            exit(1);
-        }
-
-        get_color(color, files.at(i), sb);
-
-        if (counter == 0)
-        {
-            cout << color << files.at(i);
-            counter += strlen(files.at(i));
-        }
-        else if (strlen(files.at(i)) + counter + 2 <= 80)
-        {
-            cout << "  "  << color << files.at(i);
-            counter += strlen(files.at(i)) + 2;
-        }
-        else
-        {
-            counter = strlen(files.at(i));
-            cout << endl << color << files.at(i);
-        }
-
-        cout << color_default;
-
-        delete [] path;
+        rows.push_back(count);
+    }
+    if(rows.size() == 0)
+    {
+        rows.push_back(1);
     }
 
-    cout << endl;
+    /*    for(unsigned i = 0; i < col.size(); ++i)
+          {
+          cout << "Column size: " << col.at(i) << endl;
+          }
+          cout << endl;*/
+    for (int i = 0; i < rows.at(0); ++i)
+    {
+        for (unsigned c = 0; c < col.size() && i + 1 <= rows.at(c); ++c)
+        {
+            string color = "\033[";
+            unsigned int index = i;
+            for (unsigned s = 0; s < c ; ++s)
+            {
+                index += rows.at(s);
+            }
+
+            if(index >= files.size())
+            {
+                break;
+            }
+            if (dir != 0)
+            {
+                path = new char[strlen(files.at(index)) + strlen(dir) + 2];
+                strcpy(path, dir);
+                if (dir[strlen(dir) - 1] != '/')
+                {
+                    char temp[] = "/";
+                    strcat(path, temp);
+                }
+                strcat(path, files.at(index));
+            }
+            else
+            {
+                path = new char[strlen(files.at(index)) + 1];
+                strcpy(path, files.at(index));
+            }
+            int err = lstat(path, &sb);
+            if (err != 0)
+            {
+                perror("stat");
+                exit(1);
+            }
+
+
+
+            get_color(color, files.at(index), sb);
+            cout << color << setfill(' ') << setw(col.at(c))
+                << files.at(index);
+            cout << color_default;
+
+            if (c != col.size() - 1)
+            {
+                cout << "  ";
+            }
+
+            /*if (counter == 0)
+              {
+              cout << color << files.at(i);
+              counter += strlen(files.at(i));
+              }
+              else if (strlen(files.at(i)) + counter + 2 <= 80)
+              {
+              cout << "  "  << color << files.at(i);
+              counter += strlen(files.at(i)) + 2;
+              }
+              else
+              {
+              counter = strlen(files.at(i));
+              cout << endl << color << files.at(i);
+              }*/
+
+            delete [] path;
+        }
+        cout << endl;
+    }
     return;
 }
 
