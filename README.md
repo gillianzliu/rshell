@@ -1,41 +1,12 @@
 Rshell
 ======
 
-##Author & Contributor List
-
-Gillian Liu
-
 ##Program Overview
 
 This program is a simple shell for Linux. It is capable of preforming most
 of the commands that bash is able to do, but does not support built in
 bash commands such as `cd`. It however has its own built in command exit to
 terminate the program.
-
-##Files
-```
-.:
-
-Makefile
-
-LICENSE
-
-README.md
-
-./src
-
-./test
-```
-```
-./src:
-
-main.cpp
-```
-```
-./tests
-
-exec.script
-```
 
 ##How to run
 
@@ -44,14 +15,24 @@ exec.script
 3. Call `make`
 4. `cd` into bin
 5. Call Rshell
+6. to run the `ls` use the command `bin/ls` and any flags or parameters
 
 Rshell will open in the terminal and you will be able to use it.
 
 ##Program Operation
 
+###Rshell
+
 * `exit` causes the program to terminate
 
 * Supported connecters are `||`, `&&`, `;`, and also the `#` for comments
+
+###ls
+
+* `-a`, `-l`, and `-R` are supported, along with file and folder parameters
+
+* Directories are colored in bold blue, hidden files with a gray background,
+executable files in green, and symbolic links in light blue.
 
 ##Bugs and Limitations
 
@@ -74,3 +55,9 @@ immediately following. However this is only for those two connecters,
 and will not give an error if the first one is a `;`
 
 ex) `&&|` will give an error but `;&&&` or `;|` will not.
+
+* In `ls`, if you give parameters that do not exist, along with some that do, it
+ will recognize the ones that exist as legal and can output file parameters, but
+ if a directory was passed in, `readdir` will fail, saying `the directory does
+  not exist`. It will work if a flag is also passed in though.
+
