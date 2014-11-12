@@ -15,7 +15,10 @@ terminate the program.
 3. Call `make`
 4. `cd` into bin
 5. Call Rshell
-6. to run the `ls` use the command `bin/ls` and any flags or parameters
+6. To run the `ls` use the command `bin/ls` and any flags or parameters
+7. To run `cp` use the command `bin/cp arg1 arg2 (optional flag)` the flag
+can be in any order with reference to the arguments, but the optional flag must
+ be `-a` and the source file must be before the destination file.
 
 Rshell will open in the terminal and you will be able to use it.
 
@@ -33,6 +36,17 @@ Rshell will open in the terminal and you will be able to use it.
 
 * Directories are colored in bold blue, hidden files with a gray background,
 executable files in green, and symbolic links in light blue.
+
+###cp
+
+* It will move the contents of the source file to the destination file.
+
+* The destination file must not already exist or there will be an error.
+
+* `-a` is the only accepted optional flag, it cannot contain anything after
+or before the `a`. If `-a` if given, `cp` will preform three types of copying
+and output the time taken for each. Without, it will just preform the fastest of
+the three.
 
 ##Bugs and Limitations
 
