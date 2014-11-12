@@ -70,8 +70,8 @@ and will not give an error if the first one is a `;`
 
 ex) `&&|` will give an error but `;&&&` or `;|` will not.
 
-* In `ls`, if you give parameters that do not exist, along with some that do, it
- will recognize the ones that exist as legal and can output file parameters, but
- if a directory was passed in, `readdir` will fail, saying `the directory does
-  not exist`. It will work if a flag is also passed in though.
+* In `ls`, if a hidden file is in a column that is larger than itself, then
+the entire width of the column will have a gray background.
 
+* (There also was a strange bug with invalid arguments making `readdir` for a
+valid directory fail, but it was fixed.)
