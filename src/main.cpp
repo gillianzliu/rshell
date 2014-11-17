@@ -14,6 +14,7 @@
 #define FLAG_or 2
 #define FLAG_append 4
 #define FLAG_pipe 8
+#define FLAG_in 16
 
 #define fd_set in_out[0] = 0;\
             in_out[1] = 0;\
@@ -63,7 +64,7 @@ void vec_delete(char** argv)
     return;
 }
 
-char ** get_command(string& a, int& flag, char** in_out)
+char ** get_command(string& a, int& flag, char** in_out, int fd)
 {
     //first make a copy of the command string
     //so that we can check what delimiter strtok
@@ -121,41 +122,109 @@ char ** get_command(string& a, int& flag, char** in_out)
 
             if (delim == '<' || delim == '>')
             {
+                int n = 1;
+                while (pos + n < a.size() && delim == a.at(pos + n))
+                {
+                    ++n;
+                }
+                if ((delim == '>' && n > 2) || ((delim == '<') &&
+                    (n == 2 || n > 3)))
+                {
+                    cerr << "Rshell: Syntax error near '" << delim
+                        << "'" << endl;
+                    delete[] copy;
+                    a.clear();
+                    return vec;
+                }
+                if (delim == '>')
+                {
+                    bool is_num = true;
+                    for (unsigned i = 0; i < strlen(token); ++i)
+                    {
+                        if (!isdigit(token[i]))
+                        {
+                            is_num = false;
+                            break;
+                        }
+                    }
+                    if (is_num)
+                    {
+                        fd = atoi(token);
+                        temp.pop_back(); //FIXME MAKE ME A MAP
+                    }
+                }
+                else
+                {
+                    if (n == 3)
+                    {
+                        token = strtok(NULL, "\"");
+                        if (token == 0)
+                        {
+                            cerr << "Rshell: Syntax error near '" <<
+                            delim << "'" << endl;
+                            exit(1);
+                        }
+                        token = strtok(NULL, "\"");
+                        if (token == 0)
+                        {
+                            cerr << "Rshell: Syntax error near '" <<
+                            delim << "'" << endl;
+                            exit(1);
+                        }
+                        flag = flag | FLAG_in; //set flag
+                        char* t = new char[strlen(token) + 1];
+                        strcpy(t, token);
+                        t[strlen(token)] = '\0';
+                        if (in_out[0] != 0)
+                        {
+                            delete[] in_out[0];
+                        }
+                        in_out[0] = t;//put it into in_out[0] and continue
+                        if (delim == ' ')
+                        {
+                            while (pos < a.size() - 1 && delim == ' ')
+                            {
+                                ++pos;
+                                delim = a.at(pos);
+                            }
+                        } //FIXME AND POSITION
+                        before_in_out = true;
+                        continue;
+                    }
+                }
                 token = strtok(NULL, " ;|&<>");
+
                 if (token == 0)
                 {
-                    //error
+                    cerr << "RShell: Syntax error near '" << delim
+                        << "'" << endl; //error
                     exit(1); //just go back to prompt
                 }
                 char* file = new char[strlen(token) + 1];
                 strcpy(file, token);
                 if (delim == '<')
                 {
+                    if (in_out[0] != 0)
+                    {
+                        delete[] in_out[0];
+                    }
                     in_out[0] = file;
+                    flag = flag & (~FLAG_in);
                 }
                 else
                 {
-                    int n = 1;
-                    while (pos + n < a.size() && delim == a.at(pos + n))
+                    if (in_out[1] != 0)
                     {
-                        ++n;
+                        delete[] in_out[1];
                     }
-                    if (n < 3)
+                    in_out[1] = file;
+                    if (n == 2)
                     {
-                        in_out[1] = file;
-                        if (n == 2)
-                        {
-                            flag = flag | FLAG_append;
-                        }
+                        flag = flag | FLAG_append;
                     }
                     else
                     {
-                        cerr << "Rshell: Syntax error near '" << delim
-                            << "'" << endl;
-                        delete[] file;
-                        delete[] copy;
-                        a.clear();
-                        return vec;
+                        flag = flag & (!FLAG_append);
                     }
                 }
 
@@ -196,7 +265,7 @@ char ** get_command(string& a, int& flag, char** in_out)
                 }
                 else
                 {
-                    flag = flag & 7;
+                    flag = flag & ~(3);
                 }
             }
 
@@ -222,17 +291,17 @@ char ** get_command(string& a, int& flag, char** in_out)
 
                 //reset flag ('#' and ';' use 0 so reset it for
                 //those and change for '|' and '&'
-                flag = flag & 12;
+                flag = flag & ~(3);
 
                 if (delim == '|' && !(flag & FLAG_pipe))
                 {
                     //set flag bit
-                    flag = flag & FLAG_or;
+                    flag = flag | FLAG_or;
                 }
                 else if (delim == '&')
                 {
                     //set flag bit to 2
-                    flag = flag & FLAG_and;
+                    flag = flag | FLAG_and;
                 }
 
                 //            cout << flag << endl;
@@ -257,7 +326,7 @@ char ** get_command(string& a, int& flag, char** in_out)
     delete [] copy;
 
     //we got to the end so the flag should be 0
-    flag = flag & FLAG_append;
+    flag = flag & ~(3);
 
     return vec;
 }
@@ -310,10 +379,15 @@ int main()
             command = command.substr(0, p);
         }
 
-        int fd[3];
-        fd[0] = 0;
-        fd[1] = 0;
-        fd[2] = 0;
+        int fd_c[3];
+        fd_c[0] = 0;
+        fd_c[1] = 0;
+        fd_c[2] = 0;
+        int fd_p[3];
+        fd_p[0] = 0;
+        fd_p[1] = 0;
+        fd_p[2] = 0;
+
         //so continue doing and getting while there is
         //still an && or || or until the end of the
         //commands
@@ -321,8 +395,10 @@ int main()
         {
             char* in_out[3];
             fd_set
+            int fd_num = 0;
             //get the command in argv
-            char** argv = get_command(command, flag, in_out);
+            char** argv = get_command(command, flag, in_out, fd_num);
+            cout << flag << endl;
 
             //if it is empty, then go back to prompt
             if (argv == 0 || argv[0] == NULL)
@@ -343,104 +419,12 @@ int main()
             //int std_in = 1;
             //int std_out = 2;
             //int std_err = 3;
-            if (prev_pipe)
-            {
-                int err = dup2(0, 5);
-                ERR_CHECK("dup2")
-
-                err = close(0);
-                ERR_CHECK("close")
-
-                //err = close(1);
-                //ERR_CHECK("close")
-
-                //err = dup2(6, 1);
-                //ERR_CHECK("dup2")
-
-                //err = close(6);
-                //ERR_CHECK("close")
-
-                err = dup2(7, 0);
-                ERR_CHECK("dup2")
-
-                err = close(7);
-                ERR_CHECK("close")
-            }
-
             if (flag & FLAG_pipe)
             {
-                int err = dup2(1, 6);
-                ERR_CHECK("dup2")
-
-                err = pipe(fd);
+                int err = pipe(fd_c);
                 ERR_CHECK("pipe")
-
-                err = close(1);
-                ERR_CHECK("close")
-
-                err = dup2(fd[1], 1);
-                ERR_CHECK("dup2")
-
-                err = close(fd[1]);
-                ERR_CHECK("close")
-
-                err = dup2(fd[0], 7);
-                ERR_CHECK("dup2")
-
-                err = close(fd[0]);
-                ERR_CHECK("close")
             }
-            if (in_out[0] != 0)
-            {
-                int err = dup2(0, 3);
-                ERR_CHECK("dup2")
 
-                err = close(0);
-                ERR_CHECK("close")
-
-                int fd = open(in_out[0], O_RDONLY);
-                if (fd == -1)
-                {
-                    perror("open");
-                    exit(1);
-                }
-                if (fd != 0)
-                {
-                    err = dup2(fd, 0);
-                    ERR_CHECK("dup2")
-                }
-            }
-            if (in_out[1] != 0)
-            {
-                int err = dup2(1, 4);
-                ERR_CHECK("dup2")
-
-                err = close(1);
-                ERR_CHECK("close")
-
-                int app = 0;
-
-                if (flag & FLAG_append)
-                {
-                    app = O_APPEND;
-                }
-
-                int fd = open(in_out[1], O_WRONLY | O_CREAT |
-                    app, 0666);
-                if (fd == -1)
-                {
-                    perror("open");
-                    exit(1);
-                }
-                if (fd != 1)
-                {
-                    err = dup2(fd, 1);
-                    ERR_CHECK("dup2")
-
-                    err = close(fd);
-                    ERR_CHECK("close")
-                }
-            }
 
             //call the fork and check for error
             int fork_flag = fork();
@@ -454,6 +438,83 @@ int main()
             //for error
             else if (fork_flag == 0)
             {
+                if (prev_pipe)
+                {
+                    int err = close(0);
+                    ERR_CHECK("close")
+
+                    err = dup2(fd_p[0], 0);
+                    if (err == -1)
+                    cerr << fd_p << ": READ" << endl;
+                    ERR_CHECK("dup2")
+
+                    err = close(fd_p[0]);
+                    ERR_CHECK("close")
+                }
+
+                if (flag & FLAG_pipe)
+                {
+                    int err = close(1);
+                    ERR_CHECK("close")
+
+                    err = dup2(fd_c[1], 1);
+                    ERR_CHECK("dup2")
+
+                    err = close(fd_c[1]);
+                    ERR_CHECK("close")
+                }
+                if (flag & FLAG_in)
+                {
+                    int err = write(0, in_out[0], strlen(in_out[0]) + 1);
+                    ERR_CHECK("write");
+                } //FIXME
+
+                else if (in_out[0] != 0)
+                {
+                    int err = close(0);
+                    ERR_CHECK("close")
+
+                    int fd = open(in_out[0], O_RDONLY);
+                    if (fd == -1)
+                    {
+                        perror("open");
+                        exit(1);
+                    }
+                    if (fd != 0)
+                    {
+                        err = dup2(fd, 0);
+                        ERR_CHECK("dup2")
+                    }
+                }
+
+                if (in_out[1] != 0)
+                {
+                    int err = close(1);
+                    ERR_CHECK("close")
+
+                    int app = 0;
+
+                    if (flag & FLAG_append)
+                    {
+                        app = O_APPEND;
+                    }
+
+                    int fd = open(in_out[1], O_WRONLY | O_CREAT |
+                        app, 0666);
+                    if (fd == -1)
+                    {
+                        perror("open");
+                        exit(1);
+                    }
+                    if (fd != 1)
+                    {
+                        err = dup2(fd, 1);
+                        ERR_CHECK("dup2")
+
+                        err = close(fd);
+                        ERR_CHECK("close")
+                    }
+                }
                 int execvp_flag = execvp(argv[0], argv);
                 if (execvp_flag == -1)
                 {
@@ -474,53 +535,22 @@ int main()
 
             if (in_out[0] != 0)
             {
-                int err = close(0);
-                ERR_CHECK("close")
-
-                err = dup2(3, 0);
-                ERR_CHECK("dup2")
-
-                err = close(3);
-                ERR_CHECK("close")
-
                 delete [] in_out[0];
             }
             if (in_out[1] != 0)
             {
-                int err = close(1);
-                ERR_CHECK("close")
-
-                err = dup2(4, 1);
-                ERR_CHECK("dup2")
-
-                err = close(4);
-                ERR_CHECK("close")
-
                 delete [] in_out[1];
             }
             if (prev_pipe)
             {
-                int err = close(0);
-                ERR_CHECK("close")
-
-                err = dup2(5, 0);
-                ERR_CHECK("dup2")
-
-                err = close(5);
-                ERR_CHECK("close")
-
                 prev_pipe = false;
             }
             if (flag & FLAG_pipe)
             {
-                int err = close(1);
+                int err = close(fd_c[1]);
                 ERR_CHECK("close")
 
-                err = dup2(6, 1);
-                ERR_CHECK("dup2")
-
-                err = close(6);
-                ERR_CHECK("close")
+                fd_p[0] = fd_c[0];
 
                 prev_pipe = true;
             }
@@ -531,14 +561,14 @@ int main()
             {
                 //if it was the first in an &&, go back
                 //to prompt
-                if (flag == 2)
+                if (flag & FLAG_and)
                 {
                     break;
                 }
             }
             //if there wasn't an error and it was in an  ||
             //statement then go back to prompt
-            else if (flag == 1)
+            else if (flag & FLAG_or)
             {
                 break;
             }
