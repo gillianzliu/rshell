@@ -8,6 +8,18 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <stdio.h>
+#include <fcntl.h>
+
+#define FLAG_and 1
+#define FLAG_or 2
+#define FLAG_append 4
+#define FLAG_pipe 8
+
+#define fd_set in_out[0] = 0;\
+            in_out[1] = 0;\
+            in_out[2] = 0;
+#define ERR_CHECK(x) if (err == -1) \
+            { perror(x); exit (1); }
 
 using namespace std;
 
@@ -21,26 +33,38 @@ char ** conv_vec(vector<char*> v)
     //counter to keep track of the position
     //for entering char*
     unsigned i = 0;
+    char * temp = 0;
 
     for (; i < v.size(); ++i)
     {
         //first make char[] entry of the right length
-        t[i] = new char[strlen(v.at(i))];
+        temp = new char[strlen(v.at(i)) + 1];
         //then copy the entire string from the vector
         //into the char *[]
-        strcpy(t[i], v.at(i));
+        strcpy(temp, v.at(i));
+        t[i] = temp;
     }
 
     //set the last position to a null character
-    t[i] = '\0';
+    t[i] = NULL;
 
     return t;
 }
 
-char ** get_command(string& a, int& flag)
+void vec_delete(char** argv)
 {
-    //cout << a << endl;
+    int i = 0;
 
+    for (; argv[i] != 0; ++i)
+    {
+        delete[] argv[i];
+    }
+
+    return;
+}
+
+char ** get_command(string& a, int& flag, char** in_out)
+{
     //first make a copy of the command string
     //so that we can check what delimiter strtok
     //stopped at
@@ -57,29 +81,27 @@ char ** get_command(string& a, int& flag)
     //into an array
     char ** vec = NULL;
 
-    //bool done = false;
     //set a starting position to reference when
     //finding the position of the delimiter found
     char * begin = copy;
 
     //take the first token
-    char * token = strtok(copy, " ;|&#");
+    char * token = strtok(copy, " ;|&#<>");
 
     //for position of delimiter
     unsigned int pos;
+    bool before_in_out = false;
 
     while (token != 0)
     {
-//        cout << token << endl;
-
         //the position of the delimiter with respect
         //to the beginning of the array
         pos = token - begin + strlen(token);
 
-        //put the token at the end of the vector
-        temp.push_back(token);
-
-        //cout << pos << endl;
+        if (!before_in_out)
+        {
+            temp.push_back(token);
+        }
 
         //to find out which delimiter was found
         //if it was the end, it will not go through this
@@ -87,7 +109,6 @@ char ** get_command(string& a, int& flag)
         {
             //store delimiter character found
             char delim = a.at(pos);
-//            cout << delim << endl;
 
             if (delim == ' ')
             {
@@ -98,6 +119,52 @@ char ** get_command(string& a, int& flag)
                 }
             }
 
+            if (delim == '<' || delim == '>')
+            {
+                token = strtok(NULL, " ;|&<>");
+                if (token == 0)
+                {
+                    //error
+                    exit(1); //just go back to prompt
+                }
+                char* file = new char[strlen(token) + 1];
+                strcpy(file, token);
+                if (delim == '<')
+                {
+                    in_out[0] = file;
+                }
+                else
+                {
+                    int n = 1;
+                    while (pos + n < a.size() && delim == a.at(pos + n))
+                    {
+                        ++n;
+                    }
+                    if (n < 3)
+                    {
+                        in_out[1] = file;
+                        if (n == 2)
+                        {
+                            flag = flag | FLAG_append;
+                        }
+                    }
+                    else
+                    {
+                        cerr << "Rshell: Syntax error near '" << delim
+                            << "'" << endl;
+                        delete[] file;
+                        delete[] copy;
+                        a.clear();
+                        return vec;
+                    }
+                }
+
+                before_in_out = true;
+                continue;
+            }
+
+            before_in_out = false;
+
             //checking to see if there are two of the '|'
             //or '&'
             if (delim == '|' || delim == '&')
@@ -106,22 +173,33 @@ char ** get_command(string& a, int& flag)
                 //end and they are equal
                 int n = 1;
                 while (pos + n < a.size() && delim
-                     == a.at(pos + n))
+                        == a.at(pos + n))
                 {
                     ++n;
                 }
 
+                if (n == 1 && delim == '|')
+                {
+                    flag = flag | FLAG_pipe;
+                    //call piping
+                }
+
                 //if it is not 2, give an error message and clear
                 //the vector so that no commands are executed
-                if (n != 2 || pos + n == a.size() || a.at(pos + n) == ';'
-                    || a.at(pos + n) == '|' || a.at(pos + n) == '&')
+                else if (n != 2 || pos + n == a.size() || a.at(pos + n) == ';'
+                        || a.at(pos + n) == '|' || a.at(pos + n) == '&')
                 {
                     cerr << "Rshell: Syntax error near '" << delim
-                    << "'" << endl;
+                        << "'" << endl;
 
                     temp.clear();
                 }
+                else
+                {
+                    flag = flag & 7;
+                }
             }
+
 
             //Now we know delim is either a delimiter
             //that signifies the end of a command
@@ -133,54 +211,53 @@ char ** get_command(string& a, int& flag)
                 //now we convert it to a char**
                 vec = conv_vec(temp);
 
-//            for (unsigned i = 0; vec[i] != 0; ++i)
-//            {
-//                cout << i << endl;
-//                cout << vec[i] <<  endl;
-//            }
+                //            for (unsigned i = 0; vec[i] != 0; ++i)
+                //            {
+                //                cout << i << endl;
+                //                cout << vec[i] <<  endl;
+                //            }
 
                 //remember to get rid of the dynamically allocated
-                delete copy;
+                delete [] copy;
 
                 //reset flag ('#' and ';' use 0 so reset it for
                 //those and change for '|' and '&'
-                flag = 0;
+                flag = flag & 12;
 
-                if (delim == '|')
+                if (delim == '|' && !(flag & FLAG_pipe))
                 {
                     //set flag bit
-                    flag = 1;
+                    flag = flag & FLAG_or;
                 }
                 else if (delim == '&')
                 {
                     //set flag bit to 2
-                    flag = 2;
+                    flag = flag & FLAG_and;
                 }
 
-//            cout << flag << endl;
-            a = a.substr(pos + 1, a.size() - pos + 1);
+                //            cout << flag << endl;
+                a = a.erase(0, pos);
 
-            return vec;
+                return vec;
             }
 
             //this means that delim == a character
             //for the next argument so continue
         }
-
-        token = strtok(NULL, " ;|&");
+        token = strtok(NULL, " ;|&<>");
     }
 
     //so we have reached the end, set a to empty
-    a = "";
+    a.clear();
 
     //convert to proper char**
     vec = conv_vec(temp);
 
     //get rid of dynamically allocated
-    delete copy;
+    delete [] copy;
 
     //we got to the end so the flag should be 0
-    flag = 0;
+    flag = flag & FLAG_append;
 
     return vec;
 }
@@ -211,7 +288,9 @@ void display_prompt()
 int main()
 {
     int flag = 0;
+    bool prev_pipe = false;
     int error_flag;
+
     while (1)
     {
 
@@ -231,19 +310,22 @@ int main()
             command = command.substr(0, p);
         }
 
+        int fd[3];
+        fd[0] = 0;
+        fd[1] = 0;
+        fd[2] = 0;
         //so continue doing and getting while there is
         //still an && or || or until the end of the
         //commands
-        while(flag != 0 || command != "")
+        while(flag != 0 || command.size() != 0)
         {
+            char* in_out[3];
+            fd_set
             //get the command in argv
-            char ** argv = get_command(command, flag);
-
-//            cout << command << endl;
-//            cout << flag << endl;
+            char** argv = get_command(command, flag, in_out);
 
             //if it is empty, then go back to prompt
-            if (argv[0] == NULL)
+            if (argv == 0 || argv[0] == NULL)
             {
                 break;
             }
@@ -251,15 +333,114 @@ int main()
             //if the command is exit, exit program
             else if (strcmp(argv[0], "exit") == 0)
             {
+                vec_delete(argv);
+                delete [] argv;
                 return 0;
             }
 
-//            for (int i = 0; argv[i] != 0; ++i)
-//            {
-//                cout << argv[i] << endl;
-//            }
-
             error_flag = 0;
+
+            //int std_in = 1;
+            //int std_out = 2;
+            //int std_err = 3;
+            if (prev_pipe)
+            {
+                int err = dup2(0, 5);
+                ERR_CHECK("dup2")
+
+                err = close(0);
+                ERR_CHECK("close")
+
+                //err = close(1);
+                //ERR_CHECK("close")
+
+                //err = dup2(6, 1);
+                //ERR_CHECK("dup2")
+
+                //err = close(6);
+                //ERR_CHECK("close")
+
+                err = dup2(7, 0);
+                ERR_CHECK("dup2")
+
+                err = close(7);
+                ERR_CHECK("close")
+            }
+
+            if (flag & FLAG_pipe)
+            {
+                int err = dup2(1, 6);
+                ERR_CHECK("dup2")
+
+                err = pipe(fd);
+                ERR_CHECK("pipe")
+
+                err = close(1);
+                ERR_CHECK("close")
+
+                err = dup2(fd[1], 1);
+                ERR_CHECK("dup2")
+
+                err = close(fd[1]);
+                ERR_CHECK("close")
+
+                err = dup2(fd[0], 7);
+                ERR_CHECK("dup2")
+
+                err = close(fd[0]);
+                ERR_CHECK("close")
+            }
+            if (in_out[0] != 0)
+            {
+                int err = dup2(0, 3);
+                ERR_CHECK("dup2")
+
+                err = close(0);
+                ERR_CHECK("close")
+
+                int fd = open(in_out[0], O_RDONLY);
+                if (fd == -1)
+                {
+                    perror("open");
+                    exit(1);
+                }
+                if (fd != 0)
+                {
+                    err = dup2(fd, 0);
+                    ERR_CHECK("dup2")
+                }
+            }
+            if (in_out[1] != 0)
+            {
+                int err = dup2(1, 4);
+                ERR_CHECK("dup2")
+
+                err = close(1);
+                ERR_CHECK("close")
+
+                int app = 0;
+
+                if (flag & FLAG_append)
+                {
+                    app = O_APPEND;
+                }
+
+                int fd = open(in_out[1], O_WRONLY | O_CREAT |
+                    app, 0666);
+                if (fd == -1)
+                {
+                    perror("open");
+                    exit(1);
+                }
+                if (fd != 1)
+                {
+                    err = dup2(fd, 1);
+                    ERR_CHECK("dup2")
+
+                    err = close(fd);
+                    ERR_CHECK("close")
+                }
+            }
 
             //call the fork and check for error
             int fork_flag = fork();
@@ -288,8 +469,64 @@ int main()
                 perror("wait");
                 exit(1);
             }
-//            cout << "Error flag is " << error_flag << endl;
+            //            cout << "Error flag is " << error_flag << endl;
             //if there was an error
+
+            if (in_out[0] != 0)
+            {
+                int err = close(0);
+                ERR_CHECK("close")
+
+                err = dup2(3, 0);
+                ERR_CHECK("dup2")
+
+                err = close(3);
+                ERR_CHECK("close")
+
+                delete [] in_out[0];
+            }
+            if (in_out[1] != 0)
+            {
+                int err = close(1);
+                ERR_CHECK("close")
+
+                err = dup2(4, 1);
+                ERR_CHECK("dup2")
+
+                err = close(4);
+                ERR_CHECK("close")
+
+                delete [] in_out[1];
+            }
+            if (prev_pipe)
+            {
+                int err = close(0);
+                ERR_CHECK("close")
+
+                err = dup2(5, 0);
+                ERR_CHECK("dup2")
+
+                err = close(5);
+                ERR_CHECK("close")
+
+                prev_pipe = false;
+            }
+            if (flag & FLAG_pipe)
+            {
+                int err = close(1);
+                ERR_CHECK("close")
+
+                err = dup2(6, 1);
+                ERR_CHECK("dup2")
+
+                err = close(6);
+                ERR_CHECK("close")
+
+                prev_pipe = true;
+            }
+
+            vec_delete(argv);
+            delete [] argv;
             if (error_flag != 0)
             {
                 //if it was the first in an &&, go back
