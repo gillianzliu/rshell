@@ -30,6 +30,11 @@ Rshell will open in the terminal and you will be able to use it.
 
 * Supported connecters are `||`, `&&`, `;`, and also the `#` for comments
 
+* Piping, input redirection, and output redirection are supported
+  * If there are multiple redirections for input or output, as in `< file < file < file`,
+  then the input redirection will only be taken from the last file.
+  * If there is both piping and input or output redirection, redirection will take
+  priority and override the piping.
 ###ls
 
 * `-a`, `-l`, and `-R` are supported, along with file and folder parameters

@@ -92,12 +92,20 @@ char ** get_command(string& a, int& flag, char** in_out, int fd)
     //for position of delimiter
     unsigned int pos;
     bool before_in_out = false;
+    bool t_in = false;
+
+    flag = 0;
 
     while (token != 0)
     {
         //the position of the delimiter with respect
         //to the beginning of the array
-        pos = token - begin + strlen(token);
+        if (!t_in)
+        {
+            pos = token - begin + strlen(token);
+        }
+
+        t_in = false;
 
         if (!before_in_out)
         {
@@ -180,14 +188,28 @@ char ** get_command(string& a, int& flag, char** in_out, int fd)
                             delete[] in_out[0];
                         }
                         in_out[0] = t;//put it into in_out[0] and continue
-                        if (delim == ' ')
+                        pos = token - begin + strlen(token) + 1;
+                        while (pos < a.size() && a.at(pos) == ' ')
                         {
-                            while (pos < a.size() - 1 && delim == ' ')
+                            ++pos;
+                        }
+                        if (pos < a.size())
+                        {
+                            string all_delim = " ;|&<>";
+                            if (all_delim.find(a.at(pos)) == string::npos)
                             {
-                                ++pos;
-                                delim = a.at(pos);
+                                cerr << "Rshell: Syntax error near '" <<
+                                a.at(pos) << "'" << endl;
+                                a.clear();
+                                delete[] copy;
+                                flag = 0;
+                                return vec;
                             }
-                        } //FIXME AND POSITION
+                        }
+
+                        //FIXME AND POSITION MAKE FLAG AND YOU HAVE TO MAKE A NEW FD
+                        //OR ELSE THERE WILL BE NO EOF
+                        t_in = true;
                         before_in_out = true;
                         continue;
                     }
@@ -224,7 +246,7 @@ char ** get_command(string& a, int& flag, char** in_out, int fd)
                     }
                     else
                     {
-                        flag = flag & (!FLAG_append);
+                        flag = flag & (~FLAG_append);
                     }
                 }
 
@@ -263,12 +285,7 @@ char ** get_command(string& a, int& flag, char** in_out, int fd)
 
                     temp.clear();
                 }
-                else
-                {
-                    flag = flag & ~(3);
-                }
             }
-
 
             //Now we know delim is either a delimiter
             //that signifies the end of a command
@@ -304,7 +321,6 @@ char ** get_command(string& a, int& flag, char** in_out, int fd)
                     flag = flag | FLAG_and;
                 }
 
-                //            cout << flag << endl;
                 a = a.erase(0, pos);
 
                 return vec;
@@ -388,6 +404,9 @@ int main()
         fd_p[1] = 0;
         fd_p[2] = 0;
 
+        flag = 0;
+        prev_pipe = false;
+
         //so continue doing and getting while there is
         //still an && or || or until the end of the
         //commands
@@ -398,7 +417,6 @@ int main()
             int fd_num = 0;
             //get the command in argv
             char** argv = get_command(command, flag, in_out, fd_num);
-            cout << flag << endl;
 
             //if it is empty, then go back to prompt
             if (argv == 0 || argv[0] == NULL)
@@ -467,7 +485,7 @@ int main()
                 {
                     int err = write(0, in_out[0], strlen(in_out[0]) + 1);
                     ERR_CHECK("write");
-                } //FIXME
+                } //FIXME NEED TO MAKE NEW FD TO GET EOF
 
                 else if (in_out[0] != 0)
                 {
