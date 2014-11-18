@@ -64,7 +64,7 @@ void vec_delete(char** argv)
     return;
 }
 
-char ** get_command(string& a, int& flag, char** in_out, int fd)
+char ** get_command(string& a, int& flag, char** in_out, map<int, char*> out_re)
 {
     //first make a copy of the command string
     //so that we can check what delimiter strtok
@@ -157,7 +157,16 @@ char ** get_command(string& a, int& flag, char** in_out, int fd)
                     }
                     if (is_num)
                     {
-                        fd = atoi(token);
+                        int fd = atoi(token);
+                        token = strtok(NULL, " ;|&<>");
+                        if (token == 0)
+                        {
+                            //EXIT
+                        }
+
+                        char* tempy = new char[strlen(token) + 1];
+                        strcpy(tempy, token);
+                        out_re.insert(make_pair(fd, tempy));
                         temp.pop_back(); //FIXME MAKE ME A MAP
                     }
                 }
@@ -412,6 +421,7 @@ int main()
         //commands
         while(flag != 0 || command.size() != 0)
         {
+            map<int, char*> out_re;
             char* in_out[3];
             fd_set
             int fd_num = 0;
