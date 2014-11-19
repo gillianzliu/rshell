@@ -1,0 +1,191 @@
+Script started on Tue 18 Nov 2014 11:32:10 PM PST
+]0;gzliu@Seokppa: ~/cs100/rshellgzliu@Seokppa:~/cs100/rshell$ make
+if [ ! -d "./bin" ];\
+	then mkdir bin;\
+	fi
+g++ -Wall -Werror -ansi -pedantic -g src/main.cpp -o bin/rshell
+if [ ! -d "./bin" ];\
+	then mkdir bin;\
+	fi
+g++ -Wall -Werror -ansi -pedantic -g src/ls.cpp -o bin/ls
+if [ ! -d "./bin" ];\
+	then mkdir bin;\
+	fi
+g++ -Wall -Werror -ansi -pedantic -g src/cp.cpp -o bin/cp
+]0;gzliu@Seokppa: ~/cs100/rshellgzliu@Seokppa:~/cs100/rshell$ bin/rshell 
+gzliu@Seokppa$ wc -l < README.md | grep 2 #show input and pipe                             #show input
+88
+gzliu@Seokppa$ V wc -l < README.md > testy && cat testy wc -l < README.md > testy                           #show input and output in one line
+88
+gzliu@Seokppa$ ls >> testy | && cat testy # show appending
+88
+bin
+l
+LICENSE
+Makefile
+README.md
+src
+temp
+tes
+tests
+testscript
+testy
+typescript
+gzliu@Seokppa$ cat < README.md < testy < Makefile #showing how multiple ins are handled only will look at Makefile
+G++ = g++ -Wall -Werror -ansi -pedantic -g
+all: rshell ls cp
+rshell: src/main.cpp
+	if [ ! -d "./bin" ];\
+	then mkdir bin;\
+	fi
+	$(G++) src/main.cpp -o bin/rshell
+cp: src/cp.cpp src/Timer.h
+	if [ ! -d "./bin" ];\
+	then mkdir bin;\
+	fi
+	$(G++) src/cp.cpp -o bin/cp
+ls: src/ls.cpp
+	if [ ! -d "./bin" ];\
+	then mkdir bin;\
+	fi
+	$(G++) src/ls.cpp -o bin/ls
+gzliu@Seokppa$ cat <README.md<testy      <Makefile #testing parsing
+G++ = g++ -Wall -Werror -ansi -pedantic -g
+all: rshell ls cp
+rshell: src/main.cpp
+	if [ ! -d "./bin" ];\
+	then mkdir bin;\
+	fi
+	$(G++) src/main.cpp -o bin/rshell
+cp: src/cp.cpp src/Timer.h
+	if [ ! -d "./bin" ];\
+	then mkdir bin;\
+	fi
+	$(G++) src/cp.cpp -o bin/cp
+ls: src/ls.cpp
+	if [ ! -d "./bin" ];\
+	then mkdir bin;\
+	fi
+	$(G++) src/ls.cpp -o bin/ls
+gzliu@Seokppa$ cat < testy < README.md < src/main.cpp < Makefile > in > tomato > keke >> po #sho    ws many inputs and outputs in one
+gzliu@Seokppa$ cat po
+G++ = g++ -Wall -Werror -ansi -pedantic -g
+all: rshell ls cp
+rshell: src/main.cpp
+	if [ ! -d "./bin" ];\
+	then mkdir bin;\
+	fi
+	$(G++) src/main.cpp -o bin/rshell
+cp: src/cp.cpp src/Timer.h
+	if [ ! -d "./bin" ];\
+	then mkdir bin;\
+	fi
+	$(G++) src/cp.cpp -o bin/cp
+ls: src/ls.cpp
+	if [ ! -d "./bin" ];\
+	then mkdir bin;\
+	fi
+	$(G++) src/ls.cpp -o bin/ls
+gzliu@Seokppa$ ls -a grep    | grep t | tail -1 3
+.testscript.swp
+testy
+typescript
+gzliu@Seokppa$ ls -a -l | grep a |^[[D^[[D^[[D                            -l -R | grep s | tail    head -1 #show more piping
+drwxrwxr-x 2 gzliu gzliu 4096 Nov 18 23:23 src
+gzliu@Seokppa$ cat < Makefile | tail -3 > temp #show piping, and input output redirect
+gzliu@Seokppa$ cat temp #show temp
+	then mkdir bin;\
+	fi
+	$(G++) src/ls.cpp -o bin/ls
+Rshell
+======
+
+##Program Overview
+drwxrwxr-x 2 gzliu gzliu 4096 Nov 11 23:03 tests
+-rwxr-xr-x 1 gzliu gzliu  771 Nov 18 23:14 testscript
+-rw-rw-r-- 1 gzliu gzliu  174 Nov 18 23:12 typescript
+gzliu@Seokppa$ cat < Makefile | tail -3 > temp #show piping, and input output redirect^[[D^[[D^[[D^[[D^[[D                                            
+gzliu@Seokppa$ cat < makefile        Makefile | tail -3 > tt #show input  , output  , piping
+gzliu@Seokppa$ cat tt
+	then mkdir bin;\
+	fi
+	$(G++) src/ls.cpp -o bin/ls
+gzliu@Seokppa$ cat ReADME.md        EADME.dm  md | head -4 >> temp && cat temp #appending
+	then mkdir bin;\
+	fi
+	$(G++) src/ls.cpp -o bin/ls
+Rshell
+======
+
+##Program Overview
+drwxrwxr-x 2 gzliu gzliu 4096 Nov 11 23:03 tests
+-rwxr-xr-x 1 gzliu gzliu  771 Nov 18 23:14 testscript
+-rw-rw-r-- 1 gzliu gzliu  174 Nov 18 23:12 typescript
+Rshell
+======
+
+##Program Overview
+gzliu@Seokppa$ cat READMe E.md | head -4 >> temp   t && cat tt #appending
+	then mkdir bin;\
+	fi
+	$(G++) src/ls.cpp -o bin/ls
+Rshell
+======
+
+##Program Overview
+gzliu@Seokppa$ ls -l   | tail -1 > temp &&        t && cat tt #show override, back to > from >>
+-rw-rw-r-- 1 gzliu gzliu 4096 Nov 18 23:39 typescript
+ell
+======
+
+##Program Overview
+gzliu@Seokppa$ cat <<<<  "hiya hiya hiya" #show input
+hiya hiya hiyagzliu@Seokppa$ #theres that bug
+gzliu@Seokppa$ wc -l <<< "I have many words. The number of words should be 11."
+0
+gzliu@Seokppa$ wc <<< "I have many words. The number of words should be 11."
+      0      11      52
+gzliu@Seokppa$ lfkdjgh d   2> error
+gzliu@Seokppa$ cat error
+execvp: No such file or directory
+gzliu@Seokppa$ ls 1>> eo rror
+gzliu@Seokppa$ cat error
+execvp: No such file or directory
+bin
+error
+l
+LICENSE
+Makefile
+po
+README.md
+src
+temp
+tes
+tests
+testscript
+testy
+tt
+typescript
+gzliu@Seokppa$ ls 1> error >tests       te  me
+gzliu@Seokppa$ cat error     me
+bin
+error
+l
+LICENSE
+Makefile
+me
+po
+README.md
+src
+temp
+tes
+tests
+testscript
+testy
+tt
+typescript
+gzliu@Seokppa$ exit
+]0;gzliu@Seokppa: ~/cs100/rshellgzliu@Seokppa:~/cs100/rshell$ exit
+exit
+
+Script done on Tue 18 Nov 2014 11:47:26 PM PST

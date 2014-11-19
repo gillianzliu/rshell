@@ -65,7 +65,8 @@ void vec_delete(char** argv)
     return;
 }
 
-char ** get_command(string& a, int& flag, char** in_out, map<int, char*>& out_re)
+char ** get_command(string& a, int& flag, char** in_out, map<int,
+char*>& out_re, vector<bool>& b)
 {
     //first make a copy of the command string
     //so that we can check what delimiter strtok
@@ -172,6 +173,14 @@ char ** get_command(string& a, int& flag, char** in_out, map<int, char*>& out_re
                         char* tempy = new char[strlen(token) + 1];
                         strcpy(tempy, token);
                         out_re.insert(make_pair(fd, tempy));
+                        if (n == 2)
+                        {
+                            b.push_back(true);
+                        }
+                        else
+                        {
+                            b.push_back(false);
+                        }
                         temp.pop_back(); //FIXME MAKE ME A MAP
                         before_in_out = true;
                         continue;
@@ -436,10 +445,11 @@ int main()
         while(flag != 0 || command.size() != 0)
         {
             map<int, char*> out_re;
+            vector<bool> b;
             char* in_out[3];
             fd_set
             //get the command in argv
-            char** argv = get_command(command, flag, in_out, out_re);
+            char** argv = get_command(command, flag, in_out, out_re, b);
 
             //if it is empty, then go back to prompt
             if (argv == 0 || argv[0] == NULL)
@@ -544,14 +554,21 @@ int main()
                     }
                 }
 
+                int j = 0;
+
                 for (map<int, char*>::iterator i = out_re.begin();
                     i != out_re.end(); ++i)
                 {
-                    cout << i->first << ": " << i->second << endl;
                     int err = close(i->first);
                     ERR_CHECK("close")
 
-                    int fd = open(i->second, O_WRONLY | O_CREAT, 0666);
+                    int app = 0;
+                    if (b.at(j))
+                    {
+                        app = O_APPEND;
+                    }
+
+                    int fd = open(i->second, O_WRONLY | O_CREAT | app, 0666);
                     if (fd == -1)
                     {
                         perror("open");
@@ -566,6 +583,8 @@ int main()
                         err = close(fd);
                         ERR_CHECK("close")
                     }
+
+                    j++;
                 }
 
                 if (in_out[1] != 0)

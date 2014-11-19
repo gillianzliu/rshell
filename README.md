@@ -35,6 +35,10 @@ Rshell will open in the terminal and you will be able to use it.
   then the input redirection will only be taken from the last file.
   * If there is both piping and input or output redirection, redirection will take
   priority and override the piping.
+  * If there is any file descriptor specific redirection ie. `2>`, then if the
+  file directors overlap, the normal ones take priority.
+  * `<<<` is supported along with `fd#>` and `fd#>>`
+
 ###ls
 
 * `-a`, `-l`, and `-R` are supported, along with file and folder parameters
@@ -78,5 +82,10 @@ ex) `&&|` will give an error but `;&&&` or `;|` will not.
 * In `ls`, if a hidden file is in a column that is larger than itself, then
 the entire width of the column will have a gray background.
 
-* (There also was a strange bug with invalid arguments making `readdir` for a
-valid directory fail, but it was fixed.)
+* With the command `fd#>`, if the file descriptor number if greater than 2,
+there will be a closing error.
+
+* When using `<<<` with `cat` there is no newline character at the end and with
+`wc` the numbers are off by 1.
+
+* When using `grep` or `sed`, do not use quotes.
