@@ -1,4 +1,5 @@
 #include <iostream>
+#include <map>
 #include <stdlib.h>
 #include <pwd.h>
 #include <vector>
@@ -64,7 +65,7 @@ void vec_delete(char** argv)
     return;
 }
 
-char ** get_command(string& a, int& flag, char** in_out, map<int, char*> out_re)
+char ** get_command(string& a, int& flag, char** in_out, map<int, char*>& out_re)
 {
     //first make a copy of the command string
     //so that we can check what delimiter strtok
@@ -161,13 +162,19 @@ char ** get_command(string& a, int& flag, char** in_out, map<int, char*> out_re)
                         token = strtok(NULL, " ;|&<>");
                         if (token == 0)
                         {
-                            //EXIT
+                            cerr << "Rshell: Syntax error near '" << delim
+                                << "'" << endl;
+                            delete[] copy;
+                            a.clear();
+                            return vec;
                         }
 
                         char* tempy = new char[strlen(token) + 1];
                         strcpy(tempy, token);
                         out_re.insert(make_pair(fd, tempy));
                         temp.pop_back(); //FIXME MAKE ME A MAP
+                        before_in_out = true;
+                        continue;
                     }
                 }
                 else
@@ -179,14 +186,19 @@ char ** get_command(string& a, int& flag, char** in_out, map<int, char*> out_re)
                         {
                             cerr << "Rshell: Syntax error near '" <<
                             delim << "'" << endl;
-                            exit(1);
+                            delete[] copy;
+                            a.clear();
+                            return vec;
                         }
                         token = strtok(NULL, "\"");
                         if (token == 0)
                         {
                             cerr << "Rshell: Syntax error near '" <<
                             delim << "'" << endl;
-                            exit(1);
+                            delete[] copy;
+                            a.clear();
+                            return vec;
+
                         }
                         flag = flag | FLAG_in; //set flag
                         char* t = new char[strlen(token) + 1];
@@ -229,7 +241,9 @@ char ** get_command(string& a, int& flag, char** in_out, map<int, char*> out_re)
                 {
                     cerr << "RShell: Syntax error near '" << delim
                         << "'" << endl; //error
-                    exit(1); //just go back to prompt
+                    delete[] copy;
+                    a.clear();
+                    return vec;
                 }
                 char* file = new char[strlen(token) + 1];
                 strcpy(file, token);
@@ -424,9 +438,8 @@ int main()
             map<int, char*> out_re;
             char* in_out[3];
             fd_set
-            int fd_num = 0;
             //get the command in argv
-            char** argv = get_command(command, flag, in_out, fd_num);
+            char** argv = get_command(command, flag, in_out, out_re);
 
             //if it is empty, then go back to prompt
             if (argv == 0 || argv[0] == NULL)
@@ -493,9 +506,22 @@ int main()
                 }
                 if (flag & FLAG_in)
                 {
-                    int err = write(0, in_out[0], strlen(in_out[0]) + 1);
+                    int fd_temp[3];
+                    int err = pipe(fd_temp);
+                    ERR_CHECK("pipe")
+
+                    err = close(0);
+                    ERR_CHECK("close")
+
+                    err = dup2(fd_temp[0], 0);
+                    ERR_CHECK("dup2");
+
+                    err = write(fd_temp[1], in_out[0], strlen(in_out[0]));
                     ERR_CHECK("write");
-                } //FIXME NEED TO MAKE NEW FD TO GET EOF
+
+                    err = close(fd_temp[1]);
+                    ERR_CHECK("close")
+                }
 
                 else if (in_out[0] != 0)
                 {
@@ -512,6 +538,33 @@ int main()
                     {
                         err = dup2(fd, 0);
                         ERR_CHECK("dup2")
+
+                        err = close(fd);
+                        ERR_CHECK("close")
+                    }
+                }
+
+                for (map<int, char*>::iterator i = out_re.begin();
+                    i != out_re.end(); ++i)
+                {
+                    cout << i->first << ": " << i->second << endl;
+                    int err = close(i->first);
+                    ERR_CHECK("close")
+
+                    int fd = open(i->second, O_WRONLY | O_CREAT, 0666);
+                    if (fd == -1)
+                    {
+                        perror("open");
+                        exit(1);
+                    }
+
+                    if (fd != i->first)
+                    {
+                        err = dup2(fd, i->first);
+                        ERR_CHECK("dup2")
+
+                        err = close(fd);
+                        ERR_CHECK("close")
                     }
                 }
 
@@ -560,7 +613,11 @@ int main()
             }
             //            cout << "Error flag is " << error_flag << endl;
             //if there was an error
-
+            for (map<int, char*>::iterator i = out_re.begin();
+                    i != out_re.end(); ++i)
+            {
+                delete[] i->second;
+            }
             if (in_out[0] != 0)
             {
                 delete [] in_out[0];
