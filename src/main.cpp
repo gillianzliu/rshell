@@ -20,8 +20,6 @@
 #define fd_set in_out[0] = 0;\
             in_out[1] = 0;\
             in_out[2] = 0;
-#define ERR_CHECK(x) if (err == -1) \
-            { perror(x); exit (1); }
 
 using namespace std;
 
@@ -181,7 +179,7 @@ char*>& out_re, vector<bool>& b)
                         {
                             b.push_back(false);
                         }
-                        temp.pop_back(); //FIXME MAKE ME A MAP
+                        temp.pop_back();
                         before_in_out = true;
                         continue;
                     }
@@ -237,8 +235,6 @@ char*>& out_re, vector<bool>& b)
                             }
                         }
 
-                        //FIXME AND POSITION MAKE FLAG AND YOU HAVE TO MAKE A NEW FD
-                        //OR ELSE THERE WILL BE NO EOF
                         t_in = true;
                         before_in_out = true;
                         continue;
@@ -448,8 +444,8 @@ int main()
             vector<bool> b;
             char* in_out[3];
             fd_set
-            //get the command in argv
-            char** argv = get_command(command, flag, in_out, out_re, b);
+                //get the command in argv
+                char** argv = get_command(command, flag, in_out, out_re, b);
 
             //if it is empty, then go back to prompt
             if (argv == 0 || argv[0] == NULL)
@@ -473,7 +469,11 @@ int main()
             if (flag & FLAG_pipe)
             {
                 int err = pipe(fd_c);
-                ERR_CHECK("pipe")
+                if (err == -1)
+                {
+                    perror("pipe");
+                    exit (1);
+                }
             }
 
 
@@ -492,51 +492,99 @@ int main()
                 if (prev_pipe)
                 {
                     int err = close(0);
-                    ERR_CHECK("close")
+                    if (err == -1)
+                    {
+                        perror("close");
+                        exit (1);
+                    }
 
                     err = dup2(fd_p[0], 0);
                     if (err == -1)
-                    cerr << fd_p << ": READ" << endl;
-                    ERR_CHECK("dup2")
+                        cerr << fd_p << ": READ" << endl;
+                    if (err == -1)
+                    {
+                        perror("dup2");
+                        exit (1);
+                    }
 
                     err = close(fd_p[0]);
-                    ERR_CHECK("close")
+                    if (err == -1)
+                    {
+                        perror("close");
+                        exit (1);
+                    }
                 }
 
                 if (flag & FLAG_pipe)
                 {
                     int err = close(1);
-                    ERR_CHECK("close")
+                    if (err == -1)
+                    {
+                        perror("close");
+                        exit (1);
+                    }
 
                     err = dup2(fd_c[1], 1);
-                    ERR_CHECK("dup2")
+                    if (err == -1)
+                    {
+                        perror("dup2");
+                        exit (1);
+                    }
 
                     err = close(fd_c[1]);
-                    ERR_CHECK("close")
+                    if (err == -1)
+                    {
+                        perror("close");
+                        exit (1);
+                    }
                 }
                 if (flag & FLAG_in)
                 {
                     int fd_temp[3];
                     int err = pipe(fd_temp);
-                    ERR_CHECK("pipe")
+                    if (err == -1)
+                    {
+                        perror("pipe");
+                        exit (1);
+                    }
 
                     err = close(0);
-                    ERR_CHECK("close")
+                    if (err == -1)
+                    {
+                        perror("close");
+                        exit (1);
+                    }
 
                     err = dup2(fd_temp[0], 0);
-                    ERR_CHECK("dup2");
+                    if (err == -1)
+                    {
+                        perror("dup2");
+                        exit (1);
+                    }
 
                     err = write(fd_temp[1], in_out[0], strlen(in_out[0]));
-                    ERR_CHECK("write");
+                    if (err == -1)
+                    {
+                        perror("write");
+                        exit (1);
+                    }
 
                     err = close(fd_temp[1]);
-                    ERR_CHECK("close")
+                    if (err == -1)
+                    {
+                        perror("close");
+                        exit (1);
+                    }
                 }
 
                 else if (in_out[0] != 0)
                 {
                     int err = close(0);
-                    ERR_CHECK("close")
+                    if (err == -1)
+                    {
+                        perror("close");
+                        exit (1);
+                    }
 
                     int fd = open(in_out[0], O_RDONLY);
                     if (fd == -1)
@@ -547,20 +595,32 @@ int main()
                     if (fd != 0)
                     {
                         err = dup2(fd, 0);
-                        ERR_CHECK("dup2")
+                        if (err == -1)
+                        {
+                            perror("dup2");
+                            exit (1);
+                        }
 
                         err = close(fd);
-                        ERR_CHECK("close")
+                        if (err == -1)
+                        {
+                            perror("close");
+                            exit (1);
+                        }
                     }
                 }
 
                 int j = 0;
 
                 for (map<int, char*>::iterator i = out_re.begin();
-                    i != out_re.end(); ++i)
+                        i != out_re.end(); ++i)
                 {
                     int err = close(i->first);
-                    ERR_CHECK("close")
+                    if (err == -1)
+                    {
+                        perror("close");
+                        exit (1);
+                    }
 
                     int app = 0;
                     if (b.at(j))
@@ -578,10 +638,18 @@ int main()
                     if (fd != i->first)
                     {
                         err = dup2(fd, i->first);
-                        ERR_CHECK("dup2")
+                        if (err == -1)
+                        {
+                            perror("dup2");
+                            exit (1);
+                        }
 
                         err = close(fd);
-                        ERR_CHECK("close")
+                        if (err == -1)
+                        {
+                            perror("close");
+                            exit (1);
+                        }
                     }
 
                     j++;
@@ -590,7 +658,11 @@ int main()
                 if (in_out[1] != 0)
                 {
                     int err = close(1);
-                    ERR_CHECK("close")
+                    if (err == -1)
+                    {
+                        perror("close");
+                        exit (1);
+                    }
 
                     int app = 0;
 
@@ -600,7 +672,7 @@ int main()
                     }
 
                     int fd = open(in_out[1], O_WRONLY | O_CREAT |
-                        app, 0666);
+                            app, 0666);
                     if (fd == -1)
                     {
                         perror("open");
@@ -609,10 +681,17 @@ int main()
                     if (fd != 1)
                     {
                         err = dup2(fd, 1);
-                        ERR_CHECK("dup2")
-
+                        if (err == -1)
+                        {
+                            perror("dup2");
+                            exit (1);
+                        }
                         err = close(fd);
-                        ERR_CHECK("close")
+                        if (err == -1)
+                        {
+                            perror("close");
+                            exit (1);
+                        }
                     }
                 }
                 int execvp_flag = execvp(argv[0], argv);
@@ -652,7 +731,11 @@ int main()
             if (flag & FLAG_pipe)
             {
                 int err = close(fd_c[1]);
-                ERR_CHECK("close")
+                if (err == -1)
+                {
+                    perror("close");
+                    exit (1);
+                }
 
                 fd_p[0] = fd_c[0];
 
