@@ -10,6 +10,7 @@
 #include <sys/wait.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <signal.h>
 
 #define FLAG_and 1
 #define FLAG_or 2
@@ -398,14 +399,45 @@ void display_prompt()
     cout << login << '@' << host << "$ ";
 }
 
+struct sigaction act;
+int child_pid = 0;
+vector<int> stopped_pid;
+
+void sig_handler(int signum, siginfo_t *info, void* ptr)
+{
+    if (signum == SIGINT && child_pid != 0) \\^C == 2
+    {
+        if(kill(child_pid, SIGKILL) == -1)
+        {
+            perror("kill");
+            exit(1);
+        }
+    }
+    else if (signum == SIGQUIT && child_pid != 0) \\^Z == 20
+    {
+        if(kill(child_pid, SIGSTOP) == -1)
+        {
+            perror("kill");
+            exit(1);
+        }
+        stopped_pid.push_back(child_pid);
+        cout << "[" << stopped_pid.size() << "]+ Stopped" << endl;
+    }
+}
+
 int main()
 {
     int flag = 0;
     bool prev_pipe = false;
     int error_flag;
 
+    act.sa_sigaction = sig_handler;
+    act.sa_flags = SA_SIGINFO;
+
     while (1)
     {
+        sigaction(SIGINT, &act, NULL);
+
 
         display_prompt();
 
@@ -459,6 +491,38 @@ int main()
                 vec_delete(argv);
                 delete [] argv;
                 return 0;
+            }
+            else if (strcmp(argv[0], "bg") == 0)
+            {
+                if (stopped_pid.size() == 0)
+                {
+                    cout << "rshell: bg: no current background jobs" << endl;
+                }
+                else
+                {
+                    cout << "\[" << stopped_pid.size() << "\]+ Stopped" << endl;
+                    for (unsigned i = 0, i < stopped_pid.size(), ++i)
+                    {
+                        cout << "\[" << i << "\]+ Stopped" << endl; //ALSO OUTPUT NAME/PATH OF PROCESS
+                    }
+                }
+            }
+            else if (strcmp(argv[0], "fg") == 0)
+            {
+                if (stopped_pid.size() == 0)
+                {
+                    cout << "rshell: fg: no current background jobs" << endl;
+                }
+                else
+                {
+                    int pid = stopped_pid.at(stopped_pid.size() - 1);
+                    stopped_pid.pop();
+                    if(kill(pid, SIGCONT) == -1)
+                    {
+                        perror("kill");
+                        exit(1);
+                    }
+                }
             }
 
             error_flag = 0;
