@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <errno.h>
 
 #define FLAG_and 1
 #define FLAG_or 2
@@ -402,26 +403,49 @@ void display_prompt()
 struct sigaction act;
 int child_pid = 0;
 vector<int> stopped_pid;
+int cin_stat = 0;
 
 void sig_handler(int signum, siginfo_t *info, void* ptr)
 {
-    if (signum == SIGINT && child_pid != 0) \\^C == 2
+    cout << "This processes pid: " << getpid() << endl;
+    cout << "Child processes pid: " << child_pid << endl;
+
+    if (getpid() == child_pid)
     {
+        ;
+    }
+    else if (signum == SIGINT && child_pid != 0) //^C == 2
+    {
+        cerr << "Killing process: " << child_pid << endl;
         if(kill(child_pid, SIGKILL) == -1)
         {
             perror("kill");
             exit(1);
         }
     }
-    else if (signum == SIGQUIT && child_pid != 0) \\^Z == 20
+    else if (signum == SIGTSTP && child_pid != 0) //^Z == 20
     {
+        stopped_pid.push_back(child_pid);
+        cerr << '[' << stopped_pid.size() << "]+ Stopped" << endl;
         if(kill(child_pid, SIGSTOP) == -1)
         {
             perror("kill");
             exit(1);
         }
-        stopped_pid.push_back(child_pid);
-        cout << "[" << stopped_pid.size() << "]+ Stopped" << endl;
+    }
+    else if (child_pid == 0 && cin_stat == 1)
+    {
+        cout << endl;
+    }
+}
+
+void get_paths(vector<char*>& paths, char* env_paths)
+{
+    char* temp = strtok(env_paths, ":");
+    while (temp != NULL)
+    {
+        paths.push_back(temp);
+        temp = strtok(NULL, ":");
     }
 }
 
@@ -434,15 +458,27 @@ int main()
     act.sa_sigaction = sig_handler;
     act.sa_flags = SA_SIGINFO;
 
+    char *env_PATH = getenv("PATH");
+    if (env_PATH == NULL)
+    {
+        cerr << "Rshell: no path specified" << endl;
+    }
+    cout << env_PATH << endl;
+
+    vector<char*> paths;
+    get_paths(paths, env_PATH);
+
     while (1)
     {
         sigaction(SIGINT, &act, NULL);
+        sigaction(SIGTSTP, &act, NULL);
 
-
+        cin.clear();
         display_prompt();
-
         string command;
+        cin_stat = 1;
         getline(cin, command);
+        cin_stat = 0;
 
         //first try to find a '#' sign to indicate
         //a comment
@@ -500,12 +536,13 @@ int main()
                 }
                 else
                 {
-                    cout << "\[" << stopped_pid.size() << "\]+ Stopped" << endl;
-                    for (unsigned i = 0, i < stopped_pid.size(), ++i)
+                    cout << '[' << stopped_pid.size() << "]+ Stopped" << endl;
+                    for (unsigned i = 0; i < stopped_pid.size(); ++i)
                     {
-                        cout << "\[" << i << "\]+ Stopped" << endl; //ALSO OUTPUT NAME/PATH OF PROCESS
+                        cout << '[' << i + 1 << "]+ Stopped" << endl; //ALSO OUTPUT NAME/PATH OF PROCESS
                     }
                 }
+                continue;
             }
             else if (strcmp(argv[0], "fg") == 0)
             {
@@ -516,13 +553,19 @@ int main()
                 else
                 {
                     int pid = stopped_pid.at(stopped_pid.size() - 1);
-                    stopped_pid.pop();
+                    stopped_pid.pop_back();
                     if(kill(pid, SIGCONT) == -1)
                     {
                         perror("kill");
                         exit(1);
                     }
+                    if (wait(&error) == -1)
+                    {
+                        perror("wait");
+                        exit(1);
+                    }
                 }
+                continue;
             }
 
             error_flag = 0;
@@ -542,8 +585,8 @@ int main()
 
 
             //call the fork and check for error
-            int fork_flag = fork();
-            if (fork_flag == -1)
+            child_pid = fork();
+            if (child_pid == -1)
             {
                 perror("fork");
 
@@ -551,8 +594,9 @@ int main()
             }
             //if it is the child do the command while checking
             //for error
-            else if (fork_flag == 0)
+            else if (child_pid == 0)
             {
+                cout << child_pid << ' ' << getpid() << endl;
                 if (prev_pipe)
                 {
                     int err = close(0);
@@ -758,23 +802,52 @@ int main()
                         }
                     }
                 }
-                int execvp_flag = execvp(argv[0], argv);
-                if (execvp_flag == -1)
+                char* temp_comm = argv[0];
+                for (unsigned k = 0; k < paths.size(); ++k)
                 {
-                    perror("execvp");
-                    exit(1);
+                    int slash = 1;
+                    if (paths.at(k)[strlen(paths.at(k)) - 1] != '/')
+                    {
+                        slash = 2;
+                    }
+                    char* comm = new char[strlen(paths.at(k)) + strlen(temp_comm) + slash];
+                    strcpy(comm, paths.at(k));
+                    if (slash == 2)
+                    {
+                        strcat(comm, "/");
+                    }
+                    strcat(comm, temp_comm);
+
+                    argv[0] = comm;
+
+                    cout << argv[0] << endl;
+
+                    execv(argv[0], argv);
                 }
+
+                perror("execv");
+                exit(1);
+                //int execvp_flag = execvp(argv[0], argv);
+                //if (execvp_flag == -1)
+                //{
+                //    perror("execvp");
+                //    exit(1);
+                //}
             }
 
             //if parent then wait for child
             int wait_flag = wait(&error_flag);
             if (wait_flag == -1)
             {
-                perror("wait");
-                exit(1);
+                if (errno != EINTR)
+                {
+                    perror("wait");
+                    exit(1);
+                }
             }
             //            cout << "Error flag is " << error_flag << endl;
             //if there was an error
+            child_pid = 0;
             for (map<int, char*>::iterator i = out_re.begin();
                     i != out_re.end(); ++i)
             {
