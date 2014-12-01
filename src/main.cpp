@@ -553,16 +553,22 @@ int main()
                 else
                 {
                     int pid = stopped_pid.at(stopped_pid.size() - 1);
+                    cout << '[' << stopped_pid.size() << "] Continued" << endl;
                     stopped_pid.pop_back();
                     if(kill(pid, SIGCONT) == -1)
                     {
                         perror("kill");
                         exit(1);
                     }
-                    if (wait(&error) == -1)
+                    int error = 0;
+                    errno = 0;
+                    if (wait(&error) == -1) //don't know how to do this part
                     {
-                        perror("wait");
-                        exit(1);
+                        if (errno != EINTR)
+                        {
+                            perror("wait");
+                            exit(1);
+                        }
                     }
                 }
                 continue;
@@ -836,8 +842,9 @@ int main()
             }
 
             //if parent then wait for child
-            int wait_flag = wait(&error_flag);
-            if (wait_flag == -1)
+            errno = 0;
+            int wait_flag = wait(&error_flag); //wait does not wait for child process created after a ^C
+            if (wait_flag == -1)               //I have no idea why though
             {
                 if (errno != EINTR)
                 {
