@@ -397,7 +397,13 @@ void display_prompt()
         perror("getlogin");
     }
 
-    cout << login << '@' << host << "$ ";
+    char curr_dir[1024];
+    if (getcwd(curr_dir, 1024) == NULL)
+    {
+        perror("getenv");
+    }
+
+    cout << login << '@' << host << ':' << curr_dir << "$ ";
 }
 
 struct sigaction act;
@@ -426,7 +432,18 @@ void sig_handler(int signum, siginfo_t *info, void* ptr)
     else if (signum == SIGTSTP && child_pid != 0) //^Z == 20
     {
         stopped_pid.push_back(child_pid);
-        cerr << '[' << stopped_pid.size() << "]+ Stopped" << endl;
+        char proc_path[1024];
+        char proc_link[1024];
+        sprintf(proc_link, "/proc/%d/exe", child_pid);
+        ssize_t len = readlink(proc_link, proc_path,
+                sizeof(proc_link));
+        if (len == -1)
+        {
+            perror("readlink");
+        }
+        proc_path[len] = '\0';
+        cerr << '[' << stopped_pid.size() << "]+ Stopped" << "\t\t"
+            << proc_path << endl;
         if(kill(child_pid, SIGSTOP) == -1)
         {
             perror("kill");
@@ -467,6 +484,9 @@ int main()
 
     vector<char*> paths;
     get_paths(paths, env_PATH);
+    char t[3];
+    strcpy(t, "./");
+    paths.push_back(t);
 
     while (1)
     {
@@ -536,10 +556,21 @@ int main()
                 }
                 else
                 {
-                    cout << '[' << stopped_pid.size() << "]+ Stopped" << endl;
+                    //cout << '[' << stopped_pid.size() << "]+ Stopped" << endl;
                     for (unsigned i = 0; i < stopped_pid.size(); ++i)
                     {
-                        cout << '[' << i + 1 << "]+ Stopped" << endl; //ALSO OUTPUT NAME/PATH OF PROCESS
+                        char proc_path[1024];
+                        char proc_link[1024];
+                        sprintf(proc_link, "/proc/%d/exe", stopped_pid.at(i));
+                        ssize_t len = readlink(proc_link, proc_path,
+                                sizeof(proc_link));
+                        if (len == -1)
+                        {
+                            perror("readlink");
+                        }
+                        proc_path[len] = '\0';
+                        cout << '[' << i + 1 << "]+ Stopped" << "\t\t"
+                            << proc_path << endl;
                     }
                 }
                 continue;
@@ -552,9 +583,23 @@ int main()
                 }
                 else
                 {
+                    char proc_path[1024];
+                    char proc_link[1024];
+
+
                     int pid = stopped_pid.at(stopped_pid.size() - 1);
-                    cout << '[' << stopped_pid.size() << "] Continued" << endl;
+                    sprintf(proc_link, "/proc/%d/exe", pid);
+                    ssize_t len = readlink(proc_link, proc_path,
+                            sizeof(proc_link));
+                    if (len == -1)
+                    {
+                        perror("readlink");
+                    }
+                    proc_path[len] = '\0';
+                    cout << '[' << stopped_pid.size() << "] Continued"
+                        << "\t\t" << proc_path << endl;
                     stopped_pid.pop_back();
+                    child_pid = pid;
                     if(kill(pid, SIGCONT) == -1)
                     {
                         perror("kill");
@@ -562,14 +607,42 @@ int main()
                     }
                     int error = 0;
                     errno = 0;
-                    if (wait(&error) == -1) //don't know how to do this part
+                    if (waitpid(pid, &error, 0) == -1)
+                        //don't know how to do this part
                     {
+                        cout << "Hiya, waitpid failed!" << endl;
                         if (errno != EINTR)
                         {
-                            perror("wait");
+                            perror("waitpid");
+                            exit(1);
+                        }
+                        if (waitpid(-1, 0, WUNTRACED) == -1)
+                        {
+                            perror("waitpid");
                             exit(1);
                         }
                     }
+                    child_pid = 0;
+                }
+                continue;
+            }
+            else if (strcmp(argv[0], "cd") == 0)
+            {
+                if (argv[1] == NULL)
+                {
+                    char* home = getenv("HOME");
+                    if (home == NULL)
+                    {
+                        perror("getenv");
+                    }
+                    else if (chdir(home) == -1)
+                    {
+                        perror("chdir");
+                    }
+                }
+                else if (chdir(argv[1]) == -1)
+                {
+                    perror("chdir");
                 }
                 continue;
             }
@@ -591,7 +664,8 @@ int main()
 
 
             //call the fork and check for error
-            child_pid = fork();
+            int fork_flag = fork();
+            child_pid = fork_flag;
             if (child_pid == -1)
             {
                 perror("fork");
@@ -816,7 +890,8 @@ int main()
                     {
                         slash = 2;
                     }
-                    char* comm = new char[strlen(paths.at(k)) + strlen(temp_comm) + slash];
+                    char* comm = new char[strlen(paths.at(k))
+                        + strlen(temp_comm) + slash];
                     strcpy(comm, paths.at(k));
                     if (slash == 2)
                     {
@@ -843,12 +918,23 @@ int main()
 
             //if parent then wait for child
             errno = 0;
-            int wait_flag = wait(&error_flag); //wait does not wait for child process created after a ^C
-            if (wait_flag == -1)               //I have no idea why though
+            int wait_flag = waitpid(fork_flag, &error_flag, 0);
+            //wait does not wait for child process created after a ^C
+            //if i use fork_flag the timing is right, but the children are
+            //zombies and if i use -1 there are no zombies but it doesn't
+            //print the prompt again for some reason
+            //I have no idea why though
+            if (wait_flag == -1)
             {
+                cout << "HOHO waitpid failed!" << endl;
                 if (errno != EINTR)
                 {
                     perror("wait");
+                    exit(1);
+                }
+                if (waitpid(-1, 0, WUNTRACED) == -1)
+                {
+                    perror("waitpid");
                     exit(1);
                 }
             }
