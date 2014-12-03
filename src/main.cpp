@@ -475,19 +475,6 @@ int main()
     act.sa_sigaction = sig_handler;
     act.sa_flags = SA_SIGINFO;
 
-    char *env_PATH = getenv("PATH");
-    if (env_PATH == NULL)
-    {
-        cerr << "Rshell: no path specified" << endl;
-    }
-    cout << env_PATH << endl;
-
-    vector<char*> paths;
-    get_paths(paths, env_PATH);
-    char t[3];
-    strcpy(t, "./");
-    paths.push_back(t);
-
     while (1)
     {
         sigaction(SIGINT, &act, NULL);
@@ -528,6 +515,22 @@ int main()
         //commands
         while(flag != 0 || command.size() != 0)
         {
+            char *env_PATH = getenv("PATH");
+            if (env_PATH == NULL)
+            {
+                cerr << "Rshell: no path specified" << endl;
+            }
+            cout << env_PATH << endl;
+
+            vector<char*> paths;
+            char* tt = new char[strlen(env_PATH) + 1];
+            strcpy(tt, env_PATH);
+
+            get_paths(paths, tt);
+            char t[3];
+            strcpy(t, "./");
+            paths.push_back(t);
+
             map<int, char*> out_re;
             vector<bool> b;
             char* in_out[3];
@@ -545,6 +548,7 @@ int main()
             else if (strcmp(argv[0], "exit") == 0)
             {
                 vec_delete(argv);
+                delete [] tt;
                 delete [] argv;
                 return 0;
             }
@@ -573,6 +577,9 @@ int main()
                             << proc_path << endl;
                     }
                 }
+                vec_delete(argv);
+                delete [] tt;
+                delete [] argv;
                 continue;
             }
             else if (strcmp(argv[0], "fg") == 0)
@@ -624,6 +631,9 @@ int main()
                     }
                     child_pid = 0;
                 }
+                vec_delete(argv);
+                delete [] tt;
+                delete [] argv;
                 continue;
             }
             else if (strcmp(argv[0], "cd") == 0)
@@ -644,6 +654,9 @@ int main()
                 {
                     perror("chdir");
                 }
+                vec_delete(argv);
+                delete [] tt;
+                delete [] argv;
                 continue;
             }
 
@@ -972,6 +985,7 @@ int main()
                 prev_pipe = true;
             }
 
+            delete[] tt;
             vec_delete(argv);
             delete [] argv;
             if (error_flag != 0)
