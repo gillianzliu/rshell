@@ -38,10 +38,14 @@ Rshell will open in the terminal and you will be able to use it.
   * If there is any file descriptor specific redirection ie. `2>`, then if the
   file directors overlap, the normal ones take priority.
   * `<<<` is supported along with `fd#>` and `fd#>>`
-  * `^C` will cause the foreground process to stop if there is one, but `rshell` will not be exited.
-  * `^Z` will cause the foreground process to be stopped and will output a message with an identifying number as well as what the process is. `^Z` will give the process the lowest unused identifying number starting from `1`.
-  * `bg` is a command that will list all processes in the background with their identifying number and process name.
-  * `fg` is a command that will continue the background process with the latest identifying number. It can also take in an additional parameter which is a positive number, corresponding to a processes identifying number. If this optional parameter is given, it will resume the process which corresponds to the identifying number given.
+
+* `^C` will cause the foreground process to stop if there is one, but `rshell` will not be exited.
+
+* `^Z` will cause the foreground process to be stopped and will output a message with an identifying number as well as what the process is. `^Z` will give the process the lowest unused identifying number starting from `1`.
+
+* `bg` is a command that will list all processes in the background with their identifying number and process name.
+
+* `fg` is a command that will continue the background process with the latest identifying number. It can also take in an additional parameter which is a positive number, corresponding to a processes identifying number. If this optional parameter is given, it will resume the process which corresponds to the identifying number given.
 
 ###ls
 
