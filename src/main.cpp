@@ -413,8 +413,8 @@ int cin_stat = 0;
 
 void sig_handler(int signum, siginfo_t *info, void* ptr)
 {
-    cout << "This processes pid: " << getpid() << endl;
-    cout << "Child processes pid: " << child_pid << endl;
+    //cout << "This processes pid: " << getpid() << endl;
+    //cout << "Child processes pid: " << child_pid << endl;
 
     if (getpid() == child_pid)
     {
@@ -422,7 +422,7 @@ void sig_handler(int signum, siginfo_t *info, void* ptr)
     }
     else if (signum == SIGINT && child_pid != 0) //^C == 2
     {
-        cerr << "Killing process: " << child_pid << endl;
+        //cerr << "Killing process: " << child_pid << endl;
         if(kill(child_pid, SIGKILL) == -1)
         {
             perror("kill");
@@ -431,7 +431,19 @@ void sig_handler(int signum, siginfo_t *info, void* ptr)
     }
     else if (signum == SIGTSTP && child_pid != 0) //^Z == 20
     {
-        stopped_pid.push_back(child_pid);
+        unsigned pos = 0;
+        for (; pos < stopped_pid.size(); ++pos)
+        {
+            if (stopped_pid.at(pos) == 0)
+            {
+                stopped_pid.at(pos) = child_pid;
+                break;
+            }
+        }
+        if (pos == stopped_pid.size())
+        {
+            stopped_pid.push_back(child_pid);
+        }
         char proc_path[1024];
         char proc_link[1024];
         sprintf(proc_link, "/proc/%d/exe", child_pid);
@@ -442,7 +454,7 @@ void sig_handler(int signum, siginfo_t *info, void* ptr)
             perror("readlink");
         }
         proc_path[len] = '\0';
-        cerr << '[' << stopped_pid.size() << "]+ Stopped" << "\t\t"
+        cerr << '[' << pos + 1 << "]+ Stopped" << "\t\t"
             << proc_path << endl;
         if(kill(child_pid, SIGSTOP) == -1)
         {
@@ -477,8 +489,16 @@ int main()
 
     while (1)
     {
-        sigaction(SIGINT, &act, NULL);
-        sigaction(SIGTSTP, &act, NULL);
+        if (sigaction(SIGINT, &act, NULL) == -1)
+        {
+            perror("sigaction");
+            exit(1);
+        }
+        if (sigaction(SIGTSTP, &act, NULL) == -1)
+        {
+            perror("sigaction");
+            exit(1);
+        }
 
         cin.clear();
         display_prompt();
@@ -520,21 +540,23 @@ int main()
             {
                 cerr << "Rshell: no path specified" << endl;
             }
-            cout << env_PATH << endl;
+            //cout << env_PATH << endl;
 
             vector<char*> paths;
+            char t[3];
+            strcpy(t, "./");
+            paths.push_back(t);
+
             char* tt = new char[strlen(env_PATH) + 1];
             strcpy(tt, env_PATH);
 
             get_paths(paths, tt);
-            char t[3];
-            strcpy(t, "./");
-            paths.push_back(t);
 
             map<int, char*> out_re;
             vector<bool> b;
             char* in_out[3];
             fd_set
+
                 //get the command in argv
                 char** argv = get_command(command, flag, in_out, out_re, b);
 
@@ -554,7 +576,16 @@ int main()
             }
             else if (strcmp(argv[0], "bg") == 0)
             {
-                if (stopped_pid.size() == 0)
+                bool is_empty = true;
+                for (unsigned i = 0; i < stopped_pid.size(); ++i)
+                {
+                    if (stopped_pid.at(i) != 0)
+                    {
+                        is_empty = false;
+                        break;
+                    }
+                }
+                if (is_empty)
                 {
                     cout << "rshell: bg: no current background jobs" << endl;
                 }
@@ -563,6 +594,10 @@ int main()
                     //cout << '[' << stopped_pid.size() << "]+ Stopped" << endl;
                     for (unsigned i = 0; i < stopped_pid.size(); ++i)
                     {
+                        if (stopped_pid.at(i) == 0)
+                        {
+                            continue;
+                        }
                         char proc_path[1024];
                         char proc_link[1024];
                         sprintf(proc_link, "/proc/%d/exe", stopped_pid.at(i));
@@ -584,17 +619,60 @@ int main()
             }
             else if (strcmp(argv[0], "fg") == 0)
             {
-                if (stopped_pid.size() == 0)
+                unsigned process_num = 0;
+                for (int i = stopped_pid.size() - 1; i >= 0; --i)
+                {
+                    if (stopped_pid.at(i) != 0)
+                    {
+                        process_num = i + 1;
+                        break;
+                    }
+                }
+                //cout << process_num << "  " << stopped_pid.size() << endl;
+                if (process_num == 0)
                 {
                     cout << "rshell: fg: no current background jobs" << endl;
                 }
                 else
                 {
+                    if (argv[1] != NULL)
+                    {
+                        bool is_num = true;
+                        for (unsigned i = 0; i < strlen(argv[1]); ++i)
+                        {
+                            if (!isdigit(argv[1][i]))
+                            {
+                                is_num = false;
+                                break;
+                            }
+                        }
+                        if (!is_num)
+                        {
+                            cerr << "rshell: fg: Invalid number" << endl;
+                            vec_delete(argv);
+                            delete [] tt;
+                            delete [] argv;
+                            continue;
+                        }
+                        process_num = atoi(argv[1]);
+                        if (process_num <= 0 ||
+                                process_num > stopped_pid.size()
+                                || stopped_pid.at(process_num - 1) == 0)
+                        {
+                            cerr << "rshell: fg: " << process_num
+                                << ": no such job" << endl;
+                            vec_delete(argv);
+                            delete [] tt;
+                            delete [] argv;
+                            continue;
+                        }
+                    }
+                    process_num--;
+
                     char proc_path[1024];
                     char proc_link[1024];
 
-
-                    int pid = stopped_pid.at(stopped_pid.size() - 1);
+                    int pid = stopped_pid.at(process_num);
                     sprintf(proc_link, "/proc/%d/exe", pid);
                     ssize_t len = readlink(proc_link, proc_path,
                             sizeof(proc_link));
@@ -603,21 +681,25 @@ int main()
                         perror("readlink");
                     }
                     proc_path[len] = '\0';
-                    cout << '[' << stopped_pid.size() << "] Continued"
+                    cout << '[' << process_num + 1 << "] Continued"
                         << "\t\t" << proc_path << endl;
-                    stopped_pid.pop_back();
+                    stopped_pid.at(process_num) = 0;
                     child_pid = pid;
+
+                    int error = 0;
+                    errno = 0;
+
+                    //cout << pid << endl;
                     if(kill(pid, SIGCONT) == -1)
                     {
                         perror("kill");
                         exit(1);
                     }
-                    int error = 0;
-                    errno = 0;
+
                     if (waitpid(pid, &error, 0) == -1)
                         //don't know how to do this part
                     {
-                        cout << "Hiya, waitpid failed!" << endl;
+                        //cout << "Hiya, waitpid failed!" << endl;
                         if (errno != EINTR)
                         {
                             perror("waitpid");
@@ -628,6 +710,11 @@ int main()
                             perror("waitpid");
                             exit(1);
                         }
+                    }
+                    if (WIFSIGNALED(error))
+                    {
+                        cout << "Terminated by signal: " << WTERMSIG(error)
+                            << endl;
                     }
                     child_pid = 0;
                 }
@@ -643,7 +730,7 @@ int main()
                     char* home = getenv("HOME");
                     if (home == NULL)
                     {
-                        perror("getenv");
+                        cerr << "rsehll: cd: no parameters" << endl;
                     }
                     else if (chdir(home) == -1)
                     {
@@ -658,6 +745,25 @@ int main()
                 delete [] tt;
                 delete [] argv;
                 continue;
+            }
+
+            char* temp_comm = argv[0];
+            for (unsigned k = 0; k < paths.size(); ++k)
+            {
+                int slash = 1;
+                if (paths.at(k)[strlen(paths.at(k)) - 1] != '/')
+                {
+                    slash = 2;
+                }
+                char* comm = new char[strlen(paths.at(k))
+                    + strlen(temp_comm) + slash];
+                strcpy(comm, paths.at(k));
+                if (slash == 2)
+                {
+                    strcat(comm, "/");
+                }
+                strcat(comm, temp_comm);
+                paths.at(k) = comm;
             }
 
             error_flag = 0;
@@ -675,7 +781,6 @@ int main()
                 }
             }
 
-
             //call the fork and check for error
             int fork_flag = fork();
             child_pid = fork_flag;
@@ -689,7 +794,12 @@ int main()
             //for error
             else if (child_pid == 0)
             {
-                cout << child_pid << ' ' << getpid() << endl;
+                if (signal(SIGINT, SIG_IGN) == SIG_ERR)
+                {
+                    perror("signal");
+                    exit(1);
+                }
+                //cout << child_pid << ' ' << getpid() << endl;
                 if (prev_pipe)
                 {
                     int err = close(0);
@@ -895,26 +1005,11 @@ int main()
                         }
                     }
                 }
-                char* temp_comm = argv[0];
                 for (unsigned k = 0; k < paths.size(); ++k)
                 {
-                    int slash = 1;
-                    if (paths.at(k)[strlen(paths.at(k)) - 1] != '/')
-                    {
-                        slash = 2;
-                    }
-                    char* comm = new char[strlen(paths.at(k))
-                        + strlen(temp_comm) + slash];
-                    strcpy(comm, paths.at(k));
-                    if (slash == 2)
-                    {
-                        strcat(comm, "/");
-                    }
-                    strcat(comm, temp_comm);
+                    argv[0] = paths.at(k);
 
-                    argv[0] = comm;
-
-                    cout << argv[0] << endl;
+                    //cout << argv[0] << endl;
 
                     execv(argv[0], argv);
                 }
@@ -939,7 +1034,7 @@ int main()
             //I have no idea why though
             if (wait_flag == -1)
             {
-                cout << "HOHO waitpid failed!" << endl;
+                //cout << "HOHO waitpid failed!" << endl;
                 if (errno != EINTR)
                 {
                     perror("wait");
@@ -986,6 +1081,10 @@ int main()
             }
 
             delete[] tt;
+            for (unsigned k = 0; k < paths.size(); ++k)
+            {
+                delete [] paths.at(k);
+            }
             vec_delete(argv);
             delete [] argv;
             if (error_flag != 0)
