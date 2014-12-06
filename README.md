@@ -5,8 +5,8 @@ Rshell
 
 This program is a simple shell for Linux. It is capable of preforming most
 of the commands that bash is able to do, but does not support built in
-bash commands such as `cd`. It however has its own built in command exit to
-terminate the program.
+bash commands or interpretations. It does however have some own built in
+commands such as `exit` to terminate the program.
 
 ##How to run
 
