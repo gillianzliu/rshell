@@ -39,6 +39,8 @@ Rshell will open in the terminal and you will be able to use it.
   file directors overlap, the normal ones take priority.
   * `<<<` is supported along with `fd#>` and `fd#>>`
 
+* The command `cd` will change the working directory to the home directory if none is specified. If there is one, it must be specified by its full path name from the current directory after the `cd` command
+
 * `^C` will cause the foreground process to stop if there is one, but `rshell` will not be exited.
 
 * `^Z` will cause the foreground process to be stopped and will output a message with an identifying number as well as what the process is. `^Z` will give the process the lowest unused identifying number starting from `1`.
@@ -71,8 +73,7 @@ the three.
 ignore any that are in sequence except for the first one. Unless the
 first one is a `|` or `&` in which case if the syntax is incorrect will give
 you an error.
-
-ex) `;|&;||&` will result in the program only seeing the `;` and `||;&`
+   ex) `;|&;||&` will result in the program only seeing the `;` and `||;&`
 will result in the or conecter being used but `||&;&` will result in an error.
 
 * Rshell will also ignore any connecters at the end that are not `|`, `&`, or
@@ -84,8 +85,7 @@ the statement immediately preceeding it.
 connecters, and will give an error if there is any other connecters
 immediately following. However this is only for those two connecters,
 and will not give an error if the first one is a `;`
-
-ex) `&&|` will give an error but `;&&&` or `;|` will not.
+   ex) `&&|` will give an error but `;&&&` or `;|` will not.
 
 * In `ls`, if a hidden file is in a column that is larger than itself, then
 the entire width of the column will have a gray background.
@@ -97,3 +97,5 @@ there will be a closing error.
 `wc` the numbers are off by 1.
 
 * When using `grep` or `sed`, do not use quotes.
+
+* for any of the built in commands, it will not give you an error if you input too many parameters, but will ignore them.

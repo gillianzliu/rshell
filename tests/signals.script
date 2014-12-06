@@ -1,0 +1,195 @@
+Script started on Fri 05 Dec 2014 06:11:26 PM PST
+~/rshell
+gliu016@hammer $ make
+if [ ! -d "./bin" ];\
+	then mkdir bin;\
+	fi
+g++ -Wall -Werror -ansi -pedantic -g src/main.cpp -o bin/rshell
+if [ ! -d "./bin" ];\
+	then mkdir bin;\
+	fi
+g++ -Wall -Werror -ansi -pedantic -g src/ls.cpp -o bin/ls
+if [ ! -d "./bin" ];\
+	then mkdir bin;\
+	fi
+g++ -Wall -Werror -ansi -pedantic -g src/cp.cpp -o bin/cp
+~/rshell
+gliu016@hammer $ bin/rshell 
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ cd  pwd
+/home/csmajs/gliu016/rshell
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ cd .. #check backwards
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016$ pwd
+/home/csmajs/gliu016
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016$ ls
+a.out	    cp.cpp   Documents	lab2.cpp  mv.cpp    rm.cpp     ucr-cs100  workspace
+assn2.asm~  cs100    Downloads	move	  Pictures  rshell     untitled
+bfile	    Desktop  lab2	Music	  Public    Templates  Videos
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016$ cd skfhsdkfhj #bogus
+chdir: No such file or directory
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016$ cd mv.cpp #cd into file
+chdir: Not a directory
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016$ mkdir rshell/cd_test
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016$ mkdir rshell/cd_test/another #make test directories
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016$ cd rshell
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ ls
+bin  cd_test  LICENSE  Makefile  README.md  src  tests	typescript
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ #our directory is here
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ cd cd_test/another #longer path
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell/cd_test/another$ pwd
+/home/csmajs/gliu016/rshell/cd_test/another
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell/cd_test/another$ #YAY!     cd ../../../rshell/cd_test
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell/cd_test$ pwd #check to see if longer one worked
+/home/csmajs/gliu016/rshell/cd_test
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell/cd_test$ cd ../
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ cd cd_test/another
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell/cd_test/another$ cd #alone will take you to HOME
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016$ 
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016$ cd rshell
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell/$ #he  ceh  hecking running commands with execv instead of execvp
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ ls #will do normal ls
+bin  cd_test  LICENSE  Makefile  README.md  src  tests	typescript
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ bin/ls #will do custom ls
+[49;1;94mbin[0m  [49;1;94mcd_test[0m  [49;39mLICENSE[0m  [49;39mMakefile[0m  [49;39mREADME.md[0m  [49;1;94msrc[0m  [49;1;94mtests[0m  [49;39mtypescript[0m
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ cp bin/ls ls #more complicated
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ ls #should do           will do custim    um ls in ./
+[49;1;94mbin[0m  [49;1;94mcd_test[0m  [49;39mLICENSE[0m  [49;92mls[0m  [49;39mMakefile[0m  [49;39mREADME.md[0m  [49;1;94msrc[0m  [49;1;94mtests[0m  [49;39mtypescript[0m
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ mv  ../test.cpp test.cpp
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ g++ test.cpp -o test.o #try g++
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ ls
+bin	 LICENSE   README.md	src	  test.o  typescript
+cd_test  Makefile  script_2.sh	test.cpp  tests
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ #t TESTING SIGNALS NOW
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ ^C
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ ^C
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ ^Z
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ ^Z
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ #do nothing
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ cat
+^Cgliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ #ene ded
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ cat
+^Z[1]+ Stopped		/bin/cat
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ ps
+  PID TTY          TIME CMD
+45869 pts/0    00:00:00 bash
+45879 pts/0    00:00:00 rshell
+46113 pts/0    00:00:00 cat
+46130 pts/0    00:00:00 ps
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ ^C
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ ps
+  PID TTY          TIME CMD
+45869 pts/0    00:00:00 bash
+45879 pts/0    00:00:00 rshell
+46113 pts/0    00:00:00 cat
+46178 pts/0    00:00:00 ps
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ #didn't close bacj kground child
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ sleep 1092031798
+^Z[2]+ Stopped		/bin/sleep
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ bg
+[1]+ Stopped		/bin/cat
+[2]+ Stopped		/bin/sleep
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ cat
+^Z[3]+ Stopped		/bin/cat
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ cat
+^Z[4]+ Stopped		/bin/cat
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ sleep 209347034875
+^Z[5]+ Stopped		/bin/sleep
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ bg # we have many bg processes
+[1]+ Stopped		/bin/cat
+[2]+ Stopped		/bin/sleep
+[3]+ Stopped		/bin/cat
+[4]+ Stopped		/bin/cat
+[5]+ Stopped		/bin/sleep
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ fg
+[5] Continued		/bin/sleep
+^Cgliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ bg #see if it is removed
+[1]+ Stopped		/bin/cat
+[2]+ Stopped		/bin/sleep
+[3]+ Stopped		/bin/cat
+[4]+ Stopped		/bin/cat
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ ps #see if removed
+  PID TTY          TIME CMD
+45869 pts/0    00:00:00 bash
+45879 pts/0    00:00:00 rshell
+46113 pts/0    00:00:00 cat
+46252 pts/0    00:00:00 sleep
+46373 pts/0    00:00:00 cat
+46395 pts/0    00:00:00 cat
+46454 pts/0    00:00:00 ps
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ fg 1 #with number
+[1] Continued		/bin/cat
+^Cgliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ bg
+[2]+ Stopped		/bin/sleep
+[3]+ Stopped		/bin/cat
+[4]+ Stopped		/bin/cat
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ ps #see if gone
+  PID TTY          TIME CMD
+45869 pts/0    00:00:00 bash
+45879 pts/0    00:00:00 rshell
+46252 pts/0    00:00:00 sleep
+46373 pts/0    00:00:00 cat
+46395 pts/0    00:00:00 cat
+46481 pts/0    00:00:00 ps
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ sleep 12984732 #will og to poi sitio  n 1 when stopped
+^Z[1]+ Stopped		/bin/sleep
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ bg
+[1]+ Stopped		/bin/sleep
+[2]+ Stopped		/bin/sleep
+[3]+ Stopped		/bin/cat
+[4]+ Stopped		/bin/cat
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ fg 4
+[4] Continued		/bin/cat
+^Cgliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ ps
+  PID TTY          TIME CMD
+45869 pts/0    00:00:00 bash
+45879 pts/0    00:00:00 rshell
+46252 pts/0    00:00:00 sleep
+46373 pts/0    00:00:00 cat
+46496 pts/0    00:00:00 sleep
+46506 pts/0    00:00:00 ps
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ bg
+[1]+ Stopped		/bin/sleep
+[2]+ Stopped		/bin/sleep
+[3]+ Stopped		/bin/cat
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ fg 2
+[2] Continued		/bin/sleep
+^Cgliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ bg
+[1]+ Stopped		/bin/sleep
+[3]+ Stopped		/bin/cat
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ ps
+  PID TTY          TIME CMD
+45869 pts/0    00:00:00 bash
+45879 pts/0    00:00:00 rshell
+46373 pts/0    00:00:00 cat
+46496 pts/0    00:00:00 sleep
+46521 pts/0    00:00:00 ps
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ fg
+[3] Continued		/bin/cat
+^Cgliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ bg
+[1]+ Stopped		/bin/sleep
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ ps
+  PID TTY          TIME CMD
+45869 pts/0    00:00:00 bash
+45879 pts/0    00:00:00 rshell
+46496 pts/0    00:00:00 sleep
+46533 pts/0    00:00:00 ps
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ fg #get rid of last one
+[1] Continued		/bin/sleep
+^Cgliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ bg #thr  ry with nothing in it
+rshell: bg: no current background jobs
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ fg #try with n nothing in bg
+rshell: fg: no current background jobs
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ fg ldskfjhfd #non number
+rshell: fg: no current background jobs
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ #it does thta               # #it shecks        checks if empty first
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ cat
+^Z[1]+ Stopped		/bin/cat
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ fg ksdjsdcdlj34978r43bc #gibberish with some numbers
+rshell: fg: Invalid number
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ fg 2 #not valid num            process at 2
+rshell: fg: 2: no such job
+gliu016@hammer.cs.ucr.edu:/home/csmajs/gliu016/rshell$ exit
+~/rshell
+gliu016@hammer $ exit
+exit
+
+Script done on Fri 05 Dec 2014 06:28:10 PM PST
